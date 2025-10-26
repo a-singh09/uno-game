@@ -20,6 +20,8 @@ import { unoGameABI } from "@/constants/unogameabi";
 import { useReadContract, useActiveAccount, useSendTransaction } from "thirdweb/react";
 import { waitForReceipt, getContract, prepareContractCall } from "thirdweb";
 import ProfileDropdown from "@/components/profileDropdown"
+import { useBalanceCheck } from "@/hooks/useBalanceCheck";
+import { LowBalanceDrawer } from "@/components/LowBalanceDrawer";
 
 const CONNECTION =
   process.env.NEXT_PUBLIC_WEBSOCKET_URL ||
@@ -33,6 +35,8 @@ export default function PlayGame() {
   const [computerCreateLoading, setComputerCreateLoading] = useState(false);
   const [joiningGameId, setJoiningGameId] = useState<BigInt | null>(null);
   const [gameId, setGameId] = useState<BigInt | null>(null);
+  const [showLowBalanceDrawer, setShowLowBalanceDrawer] = useState(false);
+  const { checkBalance } = useBalanceCheck();
   const router = useRouter();
   const chains = useChains();
 
@@ -115,6 +119,13 @@ export default function PlayGame() {
       return;
     }
 
+    // Check balance before proceeding
+    const hasSufficientBalance = await checkBalance();
+    if (!hasSufficientBalance) {
+      setShowLowBalanceDrawer(true);
+      return;
+    }
+
     try {
       setCreateLoading(true);
       console.log("Creating game...");
@@ -168,6 +179,14 @@ export default function PlayGame() {
   const startComputerGame = async () => {
     setComputerCreateLoading(true);
     if (contract && address) {
+      // Check balance before proceeding
+      const hasSufficientBalance = await checkBalance();
+      if (!hasSufficientBalance) {
+        setShowLowBalanceDrawer(true);
+        setComputerCreateLoading(false);
+        return;
+      }
+
       try {
         
         console.log("Creating computer game...");
@@ -268,6 +287,13 @@ export default function PlayGame() {
         variant: "destructive",
         duration: 5000,
       });
+      return;
+    }
+
+    // Check balance before proceeding
+    const hasSufficientBalance = await checkBalance();
+    if (!hasSufficientBalance) {
+      setShowLowBalanceDrawer(true);
       return;
     }
 
@@ -491,7 +517,7 @@ export default function PlayGame() {
           </div>
 
           {/* Room Cards Grid */}
-          <div className="grid grid-cols-2 gap-4 mb-24 h-[calc(100vh-600px)] overflow-y-auto grid-rows-[7rem]">
+          <div className="grid grid-cols-2 gap-4 mb-24 h-[calc(100vh-500px)] overflow-y-auto grid-rows-[7rem]">
             {activeGames && activeGames?.length > 0 ? (
               activeGames.toReversed().map((game, index) => (
                 <div
@@ -548,8 +574,12 @@ export default function PlayGame() {
           </div>
         </div>
       )}
-      <BottomNavigation />
+      {/* <BottomNavigation /> */}
       <Toaster />
+      <LowBalanceDrawer 
+        open={showLowBalanceDrawer} 
+        onClose={() => setShowLowBalanceDrawer(false)} 
+      />
     </div>
   );
 }

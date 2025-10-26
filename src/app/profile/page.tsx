@@ -37,7 +37,7 @@ export default function Profile() {
       <div className="container mx-auto py-6 px-4 pb-24">
         <ProfilePage userAccount={userAccount} connectWallet={connectWallet} isLoading={isLoading} />
       </div>
-      <BottomNavigation />
+      {/* <BottomNavigation /> */}
     </main>
   );
 }

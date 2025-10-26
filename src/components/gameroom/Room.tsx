@@ -21,6 +21,8 @@ import { client } from "@/utils/thirdWebClient";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { useWalletAddress } from "@/utils/onchainWalletUtils";
+import { useBalanceCheck } from "@/hooks/useBalanceCheck";
+import { LowBalanceDrawer } from "@/components/LowBalanceDrawer";
 
 type User = { 
   id: string;
@@ -53,6 +55,8 @@ const Room = () => {
   const [error, setError] = useState<string | null>(null)
   const [playerToStart, setPlayerToStart] = useState<string | null>(null)
   const [playerHand, setPlayerHand] = useState<string[]>([])
+  const [showLowBalanceDrawer, setShowLowBalanceDrawer] = useState(false);
+  const { checkBalance } = useBalanceCheck();
 
   const { mutate: sendTransaction } = useSendTransaction();
 
@@ -400,6 +404,13 @@ const Room = () => {
       console.error('Missing required data to start game')
       setError('Missing required data to start game')
       return
+    }
+
+    // Check balance before proceeding
+    const hasSufficientBalance = await checkBalance();
+    if (!hasSufficientBalance) {
+      setShowLowBalanceDrawer(true);
+      return;
     }
 
     try {
@@ -807,11 +818,19 @@ const Room = () => {
             )
         )
       )}
+      <LowBalanceDrawer 
+        open={showLowBalanceDrawer} 
+        onClose={() => setShowLowBalanceDrawer(false)} 
+      />
     </div>
   ) : (
     <>
       <CenterInfo msg='Room is full' />
       <Toaster />
+      <LowBalanceDrawer 
+        open={showLowBalanceDrawer} 
+        onClose={() => setShowLowBalanceDrawer(false)} 
+      />
     </>
   );
 };

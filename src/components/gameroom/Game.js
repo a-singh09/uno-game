@@ -13,6 +13,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { useAccount, useWalletClient } from "wagmi";
 // import { addClaimableBalance, claimableBalancesApi } from '@/utils/supabase';
 import { useWalletAddress } from "@/utils/onchainWalletUtils";
+import { useBalanceCheck } from "@/hooks/useBalanceCheck";
+import { LowBalanceDrawer } from "@/components/LowBalanceDrawer";
 import { ethers } from "ethers";
 import { useReadContract, useActiveAccount, useSendTransaction } from "thirdweb/react";
 import { waitForReceipt, getContract, prepareContractCall } from "thirdweb";
@@ -55,6 +57,8 @@ const Game = ({ room, currentUser, isComputerMode = false }) => {
   const [dialogCallback, setDialogCallback] = useState(null);
   const [rewardGiven, setRewardGiven] = useState(false);
   const [computerMoveCounter, setComputerMoveCounter] = useState(0);
+  const [showLowBalanceDrawer, setShowLowBalanceDrawer] = useState(false);
+  const { checkBalance } = useBalanceCheck();
 
   // Use Wagmi hooks for wallet functionality
   const { address, isConnected } = useWalletAddress();
@@ -942,6 +946,12 @@ const Game = ({ room, currentUser, isComputerMode = false }) => {
         // console.log('Supabase response:', supabaseResponse);
 
         try {
+          // Check balance before proceeding with transaction
+          const hasSufficientBalance = await checkBalance();
+          if (!hasSufficientBalance) {
+            setShowLowBalanceDrawer(true);
+            return;
+          }
           
           const gameResultData = {
             winnerAddress: currentUserAddress,
@@ -1074,6 +1084,10 @@ const Game = ({ room, currentUser, isComputerMode = false }) => {
         <CenterInfo msg={`Game Over: ${winner} wins!!`} />
       )}
       <Toaster />
+      <LowBalanceDrawer 
+        open={showLowBalanceDrawer} 
+        onClose={() => setShowLowBalanceDrawer(false)} 
+      />
     </div>
   );
 };
