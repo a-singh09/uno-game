@@ -13,6 +13,11 @@ const GameScreen = ({
   turn,
   player1Deck,
   player2Deck,
+  player3Deck = [],
+  player4Deck = [],
+  player5Deck = [],
+  player6Deck = [],
+  playerCount = 2,
   onUnoClicked,
   playedCardsPile,
   onCardPlayedHandler,
@@ -21,8 +26,34 @@ const GameScreen = ({
   onSkipButtonHandler,
   isComputerMode = false,
 }) => {
-  const playerDeck = currentUser === "Player 1" ? player1Deck : player2Deck;
-  const opponentDeck = currentUser === "Player 1" ? player2Deck : player1Deck;
+  // Get all player decks in an object
+  const allPlayerDecks = {
+    "Player 1": player1Deck,
+    "Player 2": player2Deck,
+    "Player 3": player3Deck,
+    "Player 4": player4Deck,
+    "Player 5": player5Deck,
+    "Player 6": player6Deck,
+  };
+
+  // Get current player's deck
+  const playerDeck = allPlayerDecks[currentUser] || [];
+  
+  // Get opponent decks (all other players with cards)
+  const opponentDecks = [];
+  for (let i = 1; i <= playerCount; i++) {
+    const playerName = `Player ${i}`;
+    if (playerName !== currentUser && allPlayerDecks[playerName]?.length > 0) {
+      opponentDecks.push({
+        name: playerName,
+        deck: allPlayerDecks[playerName],
+        displayName: isComputerMode && playerName === "Player 2" ? "Computer" : playerName
+      });
+    }
+  }
+  
+  // For backward compatibility, keep opponentDeck as the first opponent
+  const opponentDeck = opponentDecks[0]?.deck || [];
   const { isSoundMuted, toggleMute } = useSoundProvider();
   const [isMusicMuted, setMusicMuted] = useState(true);
   const [playBBgMusic, { pause }] = useSound(bgMusic, { loop: true });
@@ -37,14 +68,9 @@ const GameScreen = ({
   const [unoClicked, setUnoClicked] = useState(false);
   const router = useRouter();
 
-  // Calculate opponent name and avatar
-  const opponentName = currentUser === "Player 1" ? "Player 2" : "Player 1";
-  const opponentDisplayName =
-    isComputerMode && opponentName === "Player 2"
-      ? "Computer"
-      : opponentName === "Player 1"
-      ? "You"
-      : "Opponent";
+  // Calculate opponent name and avatar (for first opponent)
+  const opponentName = opponentDecks[0]?.name || "Player 2";
+  const opponentDisplayName = opponentDecks[0]?.displayName || "Opponent";
       
   // Effect for turn animation
   useEffect(() => {
@@ -179,7 +205,7 @@ const GameScreen = ({
           onClick={() => router.push("/play")}
         >
           <svg width="24" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M24 12H5M12 19l-7-7 7-7"/>
+            <path d="M24 12H5M12 19l-7-7 7-7" />
           </svg>
           {/* Back */}
         </button>
@@ -205,103 +231,129 @@ const GameScreen = ({
         </span> */}
       </div>
 
-      {/* Opponent View */}
+      {/* Opponent View - Multiple Players */}
       <div
         className="opponent-section"
         style={{
           display: "flex",
-          flexDirection: "column",
+          flexDirection: "row",
           alignItems: "center",
-          height: "calc(100vh)",
+          justifyContent: "center",
+          gap: "2rem",
+          height: "auto",
+          paddingTop: "174px"
         }}
       >
-        <div
-          className="opponent-info"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            position: "relative",
-            marginBottom: "24px",
-            marginTop: "1rem"
-          }}
-        >
-          <div
-            className="avatar-container"
-            style={{
-              width: "2.5rem",
-              height: "2.5rem",
-              position: "relative",
-              marginBottom: "0.5rem",
-            }}
-          >
-            {turn === opponentName && (
-              <svg 
-                width="2.5rem" 
-                height="2.5rem" 
-                viewBox="0 0 100 100"
+        {opponentDecks.map((opponent, index) => {
+          // Position opponents around the table based on index
+          let positionStyle = {};
+          if (index === 0) {
+            // Left side, middle
+            positionStyle = { position: "absolute", top: "42%", left: "0%" };
+          } else if (index === 1) {
+            // Right side, middle
+            positionStyle = { position: "absolute", top: "42%", right: "0px" };
+          } else if (index === 2) {
+            // Top left
+            positionStyle = { position: "absolute", top: "20%", left: "0px" };
+          } else if (index === 3) {
+            // Top right
+            positionStyle = { position: "absolute", top: "20%", right: "0px" };
+          } else {
+            // Additional players just use absolute positioning
+            positionStyle = { position: "absolute" };
+          }
+
+          return (
+            <div
+              key={opponent.name}
+              className="opponent-info"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                ...positionStyle,
+              }}
+            >
+              <div
                 style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  transform: "rotate(-90deg)",
-                  zIndex: 1
+                  color: "#94a3b8",
+                  fontSize: "0.75rem",
+                  marginBottom: "0.5rem",
+                  visibility: turn === opponent.name ? "visible" : "hidden",
                 }}
               >
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="48"
-                  fill="none"
-                  stroke="rgba(4, 81, 214, 0.8)"
-                  strokeWidth="8"
-                  strokeDasharray={`${(turnTimeRemaining/10) * 301.6} 301.6`} // 301.6 is approx 2*PI*48 (circumference)
-                  strokeLinecap="round"
-                />
-              </svg>
-            )}
-            <div
-              className="avatar"
-              style={{
-                width: "2.5rem",
-                height: "2.5rem",
-                borderRadius: "50%",
-                overflow: "hidden",
-                position: "relative",
-                boxShadow: turn === opponentName ? "0 0 15px 5px rgba(14, 165, 233, 0.7)" : "none",
-                transform: turn === opponentName && pulseAnimation ? "scale(1.1)" : "scale(1)",
-                transition: "all 0.3s ease",
-                zIndex: 2
-              }}
-            >
-            <img
-              src="https://api.dicebear.com/9.x/micah/svg?seed=game"
-              alt="Opponent Avatar"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-            <div
-              style={{
-                color: "#94a3b8",
-                fontSize: "0.875rem",
-                visibility: turn === opponentName ? "visible" : "hidden",
-              }}
-            >
-              {isComputerMode && opponentName === "Player 2"
-                ? `Computing move... (${turnTimeRemaining}s)`
-                : `Thinking... (${turnTimeRemaining}s)`}
+                {isComputerMode && opponent.name === "Player 2"
+                  ? `Computing... (${turnTimeRemaining}s)`
+                  : `Thinking... (${turnTimeRemaining}s)`}
+              </div>
+              <div
+                className="avatar-container"
+                style={{
+                  width: "2.5rem",
+                  height: "2.5rem",
+                  position: "relative",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                {turn === opponent.name && (
+                  <svg 
+                    width="2.5rem" 
+                    height="2.5rem" 
+                    viewBox="0 0 100 100"
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      transform: "rotate(-90deg)",
+                      zIndex: 1
+                    }}
+                  >
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="48"
+                      fill="none"
+                      stroke="rgba(4, 81, 214, 0.8)"
+                      strokeWidth="8"
+                      strokeDasharray={`${(turnTimeRemaining/10) * 301.6} 301.6`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                )}
+                <div
+                  className="avatar"
+                  style={{
+                    width: "2.5rem",
+                    height: "2.5rem",
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    position: "relative",
+                    boxShadow: turn === opponent.name ? "0 0 15px 5px rgba(14, 165, 233, 0.7)" : "none",
+                    transform: turn === opponent.name && pulseAnimation ? "scale(1.1)" : "scale(1)",
+                    transition: "all 0.3s ease",
+                    zIndex: 2
+                  }}
+                >
+                  <img
+                    src={`https://api.dicebear.com/9.x/micah/svg?seed=${opponent.name}`}
+                    alt={`${opponent.displayName} Avatar`}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+              </div>
+              <PlayerViewofOpponent
+                turn={turn}
+                opponent={opponent.name}
+                opponentDeck={opponent.deck}
+              />
             </div>
-            </div>
-          </div>
+          );
+        })}
+      </div>
 
-          <PlayerViewofOpponent
-            turn={turn}
-            opponent={opponentName}
-            opponentDeck={opponentDeck}
-          />
-        </div>
-
-        {/* Game Board */}
-        <div
+      {/* Game Board */}
+      <div
           className="game-board"
           style={{
             flex: 1,
@@ -341,10 +393,10 @@ const GameScreen = ({
               }}
             />
           </div>
-        </div>
+      </div>
 
-        {/* Player View */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      {/* Player View */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           {/* <button
             className="skip-button"
             disabled={turn !== currentUser || !drawButtonPressed}
@@ -384,11 +436,11 @@ const GameScreen = ({
               `}</style> */}
             </div>
           )}
-        </div>
-        <div
-          className="player-section"
-          style={{
-            marginTop: "1rem",
+      </div>
+      <div
+        className="player-section"
+        style={{
+          marginTop: "1rem",
             paddingBottom: "86px"
           }}
         >
@@ -490,7 +542,6 @@ const GameScreen = ({
             onSkipButtonHandler={onSkipButtonHandler}
           />
         </div>
-      </div>
     </div>
   );
 };
