@@ -39,6 +39,10 @@ const initialGameState = {
   turn: "",
   player1Deck: [],
   player2Deck: [],
+  player3Deck: [],
+  player4Deck: [],
+  player5Deck: [],
+  player6Deck: [],
   currentColor: "",
   currentNumber: "",
   playedCardsPile: [],
@@ -46,11 +50,12 @@ const initialGameState = {
   isUnoButtonPressed: false,
   drawButtonPressed: false,
   lastCardPlayedBy: "",
+  totalPlayers: 2, // Track the number of players in the game
 };
 
 const gameReducer = (state, action) => ({ ...state, ...action });
 
-const Game = ({ room, currentUser, isComputerMode = false }) => {
+const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) => {
   const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -72,6 +77,10 @@ const Game = ({ room, currentUser, isComputerMode = false }) => {
     turn,
     player1Deck,
     player2Deck,
+    player3Deck,
+    player4Deck,
+    player5Deck,
+    player6Deck,
     currentColor,
     currentNumber,
     playedCardsPile,
@@ -79,6 +88,7 @@ const Game = ({ room, currentUser, isComputerMode = false }) => {
     isUnoButtonPressed,
     drawButtonPressed,
     lastCardPlayedBy,
+    totalPlayers = playerCount,
   } = gameState;
 
   const { toast } = useToast();
@@ -219,101 +229,124 @@ const Game = ({ room, currentUser, isComputerMode = false }) => {
         currentNumber: playedCardsPile[0].charAt(0),
         playedCardsPile: playedCardsPile,
         drawCardPile: drawCardPile,
+        totalPlayers: 2, // Computer mode is always 2 players
       });
     } else {
-      //shuffle PACK_OF_CARDS array
-      const shuffledCards = shuffleArray(PACK_OF_CARDS);
+      // For multiplayer mode, Player 1 initializes the game
+      if (currentUser === "Player 1") {
+        console.log(`Player 1 initializing multiplayer game with ${playerCount} players...`);
+        //shuffle PACK_OF_CARDS array
+        const shuffledCards = shuffleArray(PACK_OF_CARDS);
 
-      //extract first 5 elements to player1Deck
-      const player1Deck = shuffledCards.splice(0, 5);
+        // Initialize game state object
+        const gameState = {
+          gameOver: false,
+          turn: "Player 1",
+          currentColor: "",
+          currentNumber: "",
+          playedCardsPile: [],
+          drawCardPile: [],
+        };
 
-      //extract first 5 elements to player2Deck
-      const player2Deck = shuffledCards.splice(0, 5);
+        // Deal 5 cards to each player
+        for (let i = 1; i <= playerCount && i <= 6; i++) {
+          gameState[`player${i}Deck`] = shuffledCards.splice(0, 5);
+        }
 
-      //extract random card from shuffledCards and check if its not an action card
-      //108-14=94
-      let startingCardIndex = Math.floor(Math.random() * 94);
+        // Initialize empty decks for unused player slots
+        for (let i = playerCount + 1; i <= 6; i++) {
+          gameState[`player${i}Deck`] = [];
+        }
 
-      while (ACTION_CARDS.includes(shuffledCards[startingCardIndex])) {
-        startingCardIndex = Math.floor(Math.random() * 94);
+        //extract random card from shuffledCards and check if its not an action card
+        let startingCardIndex = Math.floor(Math.random() * shuffledCards.length);
+
+        while (ACTION_CARDS.includes(shuffledCards[startingCardIndex]) && shuffledCards.length > 0) {
+          startingCardIndex = Math.floor(Math.random() * shuffledCards.length);
+        }
+
+        //extract the card from that startingCardIndex into the playedCardsPile
+        const playedCardsPile = shuffledCards.splice(startingCardIndex, 1);
+
+        //store all remaining cards into drawCardPile
+        const drawCardPile = [...shuffledCards];
+
+        gameState.playedCardsPile = playedCardsPile;
+        gameState.currentColor = playedCardsPile[0].charAt(1);
+        gameState.currentNumber = playedCardsPile[0].charAt(0);
+        gameState.drawCardPile = drawCardPile;
+        gameState.totalPlayers = playerCount; // Store the initial player count
+
+        console.log('Initialized game state:', {
+          playerCount,
+          totalPlayers: gameState.totalPlayers,
+          decks: Object.keys(gameState).filter(k => k.includes('Deck')).map(k => `${k}: ${gameState[k].length} cards`)
+        });
+
+        //send initial state to server
+        socket.emit("initGameState", gameState);
       }
-
-      //extract the card from that startingCardIndex into the playedCardsPile
-      const playedCardsPile = shuffledCards.splice(startingCardIndex, 1);
-
-      //store all remaining cards into drawCardPile
-      const drawCardPile = [...shuffledCards];
-
-      //send initial state to server
-      socket.emit("initGameState", {
-        gameOver: false,
-        turn: "Player 1",
-        player1Deck: player1Deck,
-        player2Deck: player2Deck,
-        currentColor: playedCardsPile[0].charAt(1),
-        currentNumber: playedCardsPile[0].charAt(0),
-        playedCardsPile: playedCardsPile,
-        drawCardPile: drawCardPile,
-      });
     }
   }, [isComputerMode]);
 
   useEffect(() => {
     socket.on(
       "initGameState",
-      ({
-        gameOver,
-        turn,
-        player1Deck,
-        player2Deck,
-        currentColor,
-        currentNumber,
-        playedCardsPile,
-        drawCardPile,
-      }) => {
-        dispatch({ type: "SET_GAME_OVER", gameOver });
-        dispatch({ type: "SET_TURN", turn });
-        dispatch({ type: "SET_PLAYER1_DECK", player1Deck });
-        dispatch({ type: "SET_PLAYER2_DECK", player2Deck });
-        dispatch({ type: "SET_CURRENT_COLOR", currentColor });
-        dispatch({ type: "SET_CURRENT_NUMBER", currentNumber });
-        dispatch({ type: "SET_PLAYED_CARDS_PILE", playedCardsPile });
-        dispatch({ type: "SET_DRAW_CARD_PILE", drawCardPile });
+      (gameState) => {
+        // Dispatch all game state properties dynamically
+        dispatch(gameState);
         playShufflingSound();
       }
     );
 
     socket.on(
       "updateGameState",
-      ({
-        gameOver,
-        winner,
-        turn,
-        player1Deck,
-        player2Deck,
-        currentColor,
-        currentNumber,
-        playedCardsPile,
-        drawCardPile,
-        drawButtonPressed = false,
-      }) => {
-        gameOver && dispatch({ type: "SET_GAME_OVER", gameOver });
+      (gameState) => {
+        const { gameOver, winner, currentNumber } = gameState;
+        
         gameOver && playGameOverSound();
-        winner && dispatch({ type: "SET_WINNER", winner });
         //check for special card and play their sound else play regular sound
-        currentNumber in playSoundMap ? playSoundMap[currentNumber]() : playCardPlayedSound();
-        turn && dispatch({ type: "SET_TURN", turn });
-        player1Deck && dispatch({ type: "SET_PLAYER1_DECK", player1Deck });
-        player2Deck && dispatch({ type: "SET_PLAYER2_DECK", player2Deck });
-        currentColor && dispatch({ type: "SET_CURRENT_COLOR", currentColor });
-        currentNumber && dispatch({ type: "SET_CURRENT_NUMBER", currentNumber });
-        playedCardsPile && dispatch({ type: "SET_PLAYED_CARDS_PILE", playedCardsPile });
-        drawCardPile && dispatch({ type: "SET_DRAW_CARD_PILE", drawCardPile });
-        dispatch({ type: "SET_UNO_BUTTON_PRESSED", isUnoButtonPressed: false });
-        dispatch({ type: "SET_DRAW_BUTTON_PRESSED", drawButtonPressed });
+        currentNumber && (currentNumber in playSoundMap ? playSoundMap[currentNumber]() : playCardPlayedSound());
+        
+        // Dispatch all game state updates
+        dispatch({
+          ...gameState,
+          isUnoButtonPressed: false,
+          drawButtonPressed: gameState.drawButtonPressed || false
+        });
       }
     );
   }, []);
+
+  // Helper function to get player deck by player name
+  const getPlayerDeck = (playerName) => {
+    switch(playerName) {
+      case "Player 1": return player1Deck;
+      case "Player 2": return player2Deck;
+      case "Player 3": return player3Deck;
+      case "Player 4": return player4Deck;
+      case "Player 5": return player5Deck;
+      case "Player 6": return player6Deck;
+      default: return [];
+    }
+  };
+
+  // Helper function to get next player in turn rotation
+  const getNextPlayer = (currentPlayer, allPlayers) => {
+    const currentIndex = allPlayers.indexOf(currentPlayer);
+    const nextIndex = (currentIndex + 1) % allPlayers.length;
+    return allPlayers[nextIndex];
+  };
+
+  // Helper function to get all active players based on initial player count
+  const getActivePlayers = () => {
+    const players = [];
+    const numPlayers = totalPlayers || playerCount;
+    for (let i = 1; i <= numPlayers; i++) {
+      players.push(`Player ${i}`);
+    }
+    return players;
+  };
 
   //remove the played card from player's deck and add it to playedCardsPile (immutably)
   //then update turn, currentColor and currentNumber
@@ -331,8 +364,19 @@ const Game = ({ room, currentUser, isComputerMode = false }) => {
     toggleTurn = true,
   }) => {
     //check who is the current player
-    const playerDeck = cardPlayedBy === "Player 1" ? player1Deck : player2Deck;
-    const opponentDeck = cardPlayedBy === "Player 1" ? player2Deck : player1Deck;
+    const playerDeck = getPlayerDeck(cardPlayedBy);
+    const activePlayers = getActivePlayers();
+    const nextPlayerName = getNextPlayer(cardPlayedBy, activePlayers);
+    const nextPlayerDeck = getPlayerDeck(nextPlayerName);
+    
+    console.log('Turn rotation:', {
+      cardPlayedBy,
+      activePlayers,
+      nextPlayerName,
+      totalPlayers,
+      currentPlayerDeckSize: playerDeck.length,
+      nextPlayerDeckSize: nextPlayerDeck.length
+    });
 
     //remove the played card from player's deck and add it to playedCardsPile and update their deck(immutably)
     const removeIndex = playerDeck.indexOf(played_card);
@@ -341,7 +385,7 @@ const Game = ({ room, currentUser, isComputerMode = false }) => {
     //make a drawcardpile copy for managing draw2,draw4 and UNO penalty
     let copiedDrawCardPileArray = [...drawCardPile];
     let updatedPlayedCardsPile = [...playedCardsPile, played_card];
-    let opponentDeckCopy = [...opponentDeck];
+    let nextPlayerDeckCopy = [...nextPlayerDeck];
     
     // Helper function to draw a card with reshuffle if needed
     const drawCardWithReshuffle = () => {
@@ -375,22 +419,22 @@ const Game = ({ room, currentUser, isComputerMode = false }) => {
     };
     
     // if it is a draw2 or draw4 move pop cards from drawCardPile
-    // and add them to opponent's deck (immutably)
+    // and add them to next player's deck (immutably)
     if (isDraw2 || isDraw4) {
       // Draw 2 cards for Draw 2
       const card1 = drawCardWithReshuffle();
-      if (card1) opponentDeckCopy.push(card1);
+      if (card1) nextPlayerDeckCopy.push(card1);
       
       const card2 = drawCardWithReshuffle();
-      if (card2) opponentDeckCopy.push(card2);
+      if (card2) nextPlayerDeckCopy.push(card2);
       
       // Draw 2 more cards for Draw 4
       if (isDraw4) {
         const card3 = drawCardWithReshuffle();
-        if (card3) opponentDeckCopy.push(card3);
+        if (card3) nextPlayerDeckCopy.push(card3);
         
         const card4 = drawCardWithReshuffle();
-        if (card4) opponentDeckCopy.push(card4);
+        if (card4) nextPlayerDeckCopy.push(card4);
       }
     }
 
@@ -398,7 +442,7 @@ const Game = ({ room, currentUser, isComputerMode = false }) => {
     //else change turn after every play
     let turnCopy = cardPlayedBy;
     if (toggleTurn) {
-      turnCopy = cardPlayedBy === "Player 1" ? "Player 2" : "Player 1";
+      turnCopy = nextPlayerName;
     }
 
     //did player press UNO when 2 cards were remaining in their deck
@@ -420,36 +464,39 @@ const Game = ({ room, currentUser, isComputerMode = false }) => {
     dispatch({ type: "SET_UNO_BUTTON_PRESSED", isUnoButtonPressed: false }); 
     
     // Create a more explicit update of player decks to prevent card transfer issues
-    let newPlayer1Deck, newPlayer2Deck;
-  
-    if (cardPlayedBy === "Player 1") {
-      newPlayer1Deck = updatedPlayerDeck; // Player 1's updated deck after playing a card
-      newPlayer2Deck = opponentDeckCopy; // Player 2's deck, possibly with added cards from Draw 2/4
-    } else { 
-      newPlayer1Deck = opponentDeckCopy; // Player 1's deck, possibly with added cards from Draw 2/4
-      newPlayer2Deck = updatedPlayerDeck; // Player 2's updated deck after playing a card
-    }
-      
-    console.log('Deck changes:', {
-      cardPlayedBy,
-      originalPlayer1Deck: player1Deck.length,
-      originalPlayer2Deck: player2Deck.length,
-      newPlayer1Deck: newPlayer1Deck.length,
-      newPlayer2Deck: newPlayer2Deck.length
-        });
-
-    //Update state locally for computer mode or send to server for multiplayer
     const newGameState = {
       gameOver: checkGameOver(playerDeck),
       winner: checkWinner(playerDeck, cardPlayedBy),
       turn: turnCopy,
-      playedCardsPile: updatedPlayedCardsPile, // This now reflects any reshuffling
-      player1Deck: newPlayer1Deck,
-      player2Deck: newPlayer2Deck,
+      playedCardsPile: updatedPlayedCardsPile,
       currentColor: colorOfPlayedCard,
       currentNumber: numberOfPlayedCard,
-      drawCardPile: copiedDrawCardPileArray, // This now reflects any reshuffling
+      drawCardPile: copiedDrawCardPileArray,
     };
+
+    // Update the deck for the player who played the card
+    newGameState[`${cardPlayedBy.toLowerCase().replace(' ', '')}Deck`] = updatedPlayerDeck;
+    
+    // Update the deck for the next player (if they received cards from Draw 2/4)
+    if (isDraw2 || isDraw4) {
+      newGameState[`${nextPlayerName.toLowerCase().replace(' ', '')}Deck`] = nextPlayerDeckCopy;
+    }
+    
+    // Preserve all other player decks
+    activePlayers.forEach(player => {
+      const deckKey = `${player.toLowerCase().replace(' ', '')}Deck`;
+      if (!newGameState[deckKey]) {
+        newGameState[deckKey] = getPlayerDeck(player);
+      }
+    });
+      
+    console.log('Deck changes:', {
+      cardPlayedBy,
+      nextPlayer: nextPlayerName,
+      activePlayers,
+      updatedPlayerDeckLength: updatedPlayerDeck.length,
+      nextPlayerDeckLength: nextPlayerDeckCopy.length
+    });
 
     if (isComputerMode) {
       // Handle locally for computer mode
@@ -1058,6 +1105,11 @@ const Game = ({ room, currentUser, isComputerMode = false }) => {
             turn={turn}
             player1Deck={player1Deck}
             player2Deck={player2Deck}
+            player3Deck={player3Deck}
+            player4Deck={player4Deck}
+            player5Deck={player5Deck}
+            player6Deck={player6Deck}
+            playerCount={playerCount}
             onCardDrawnHandler={onCardDrawnHandler}
             onCardPlayedHandler={onCardPlayedHandler}
             playedCardsPile={playedCardsPile}

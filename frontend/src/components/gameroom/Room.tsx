@@ -525,7 +525,7 @@ const Room = () => {
         (() => {
           console.log('Rendering computer mode, gameStarted:', gameStarted, 'currentUser:', currentUser);
           return gameStarted ? (
-            <Game room={room} currentUser={currentUser} isComputerMode={isComputerMode} />
+            <Game room={room} currentUser={currentUser} isComputerMode={isComputerMode} playerCount={users.length} />
           ) : (
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" }}>
               <h1 className='topInfoText text-white font-2xl font-bold'>Starting game against Computer 🤖</h1>
@@ -650,9 +650,9 @@ const Room = () => {
                   marginBottom: "2rem",
                   fontStyle: "italic"
                 }}>
-                  {currentUser === "Player 2" 
+                  {users.length === 1 && currentUser !== "Player 1"
                     ? "Player 1 has left the game." 
-                    : "waiting for other players to join\nthe room."}
+                    : `waiting for other players to join (${users.length}/6)`}
                 </div>
               </div>
             </div>
@@ -750,7 +750,7 @@ const Room = () => {
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap"
                           }}>
-                            {user.name === currentUser ? `${address?.slice(0, 20)}...` : `${users[index === 0 ? 1 : 0].name}`}
+                            {user.name === currentUser ? `${address?.slice(0, 20)}...` : `${user.name}`}
                           </span>
                           {user.name === currentUser && (
                             <span style={{ 
@@ -774,7 +774,7 @@ const Room = () => {
                       marginBottom: "2rem",
                       fontStyle: "italic"
                     }}>
-                      waiting for other players to join<br />the room.
+                      waiting for other players to join ({users.length}/6)<br />minimum 2 players required to start
                     </div>
                   </div>
 
@@ -814,7 +814,7 @@ const Room = () => {
               </div>
             )
             : (
-              <Game room={room} currentUser={currentUser} isComputerMode={false} />
+              <Game room={room} currentUser={currentUser} isComputerMode={false} playerCount={users.length} />
             )
         )
       )}

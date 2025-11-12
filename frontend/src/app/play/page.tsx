@@ -423,11 +423,18 @@ export default function PlayGame() {
           </div>
         </div>
 
-        {isConnected && address && (
-          <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3">
+          {process.env.NEXT_PUBLIC_ENVIRONMENT === "development" && (
+            <Link href="/preview-game">
+              <button className="px-4 py-2 bg-purple-600/30 hover:bg-purple-600/50 text-white rounded-lg text-sm font-medium transition-all duration-200 border border-purple-500/30">
+                🎮 Preview Game
+              </button>
+            </Link>
+          )}
+          {isConnected && address && (
             <ProfileDropdown address={address} />
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {!isConnected ? (
