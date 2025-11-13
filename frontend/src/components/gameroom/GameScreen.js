@@ -247,21 +247,27 @@ const GameScreen = ({
         {opponentDecks.map((opponent, index) => {
           // Position opponents around the table based on index
           let positionStyle = {};
-          if (index === 0) {
-            // Left side, middle
-            positionStyle = { position: "absolute", top: "42%", left: "0%" };
-          } else if (index === 1) {
-            // Right side, middle
-            positionStyle = { position: "absolute", top: "42%", right: "0px" };
-          } else if (index === 2) {
-            // Top left
-            positionStyle = { position: "absolute", top: "20%", left: "0px" };
-          } else if (index === 3) {
-            // Top right
-            positionStyle = { position: "absolute", top: "20%", right: "0px" };
-          } else {
-            // Additional players just use absolute positioning
+          if (isComputerMode) {
+            // In computer mode, use simple absolute positioning for all opponents
             positionStyle = { position: "absolute" };
+          } else {
+            // In multiplayer mode, position opponents around the table
+            if (index === 0) {
+              // Left side, middle
+              positionStyle = { position: "absolute", top: "42%", left: "0%" };
+            } else if (index === 1) {
+              // Right side, middle
+              positionStyle = { position: "absolute", top: "42%", right: "0px" };
+            } else if (index === 2) {
+              // Top left
+              positionStyle = { position: "absolute", top: "20%", left: "0px" };
+            } else if (index === 3) {
+              // Top right
+              positionStyle = { position: "absolute", top: "20%", right: "0px" };
+            } else {
+              // Additional players just use absolute positioning
+              positionStyle = { position: "absolute" };
+            }
           }
 
           return (
