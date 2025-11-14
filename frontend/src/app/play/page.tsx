@@ -138,11 +138,11 @@ export default function PlayGame() {
           client,
         },
         method: "createGame",
-        params: [address as `0x${string}`],
+        params: [address as `0x${string}`, false],
       });
 
       sendTransaction(transaction, {
-        onSuccess: (result) => {
+        onSuccess: async(result) => {
           console.log("Transaction successful:", result);
           toast({
             title: "Game created successfully!",
@@ -150,6 +150,22 @@ export default function PlayGame() {
             duration: 5000,
             variant: "success",
           });
+
+          const receipt = await waitForReceipt({
+              client,
+              chain: baseSepolia,
+              transactionHash: result.transactionHash,
+            });
+
+          const gameCreatedId = receipt.logs.find((log) => log.topics.length == 2 && log.topics[1])?.topics[1]
+
+          if (gameCreatedId) {
+              const gameId = BigInt(gameCreatedId); // Convert hex to decimal
+              setGameId(gameId);
+    
+              router.push(`/game/${gameId}`);
+          }
+
           refetchGames();
           setCreateLoading(false);
         },
@@ -199,7 +215,7 @@ export default function PlayGame() {
             client,
           },
           method: "createGame",
-          params: [address as `0x${string}`],
+          params: [address as `0x${string}`, true],
         });
   
         sendTransaction(transaction, {
@@ -211,7 +227,6 @@ export default function PlayGame() {
               duration: 5000,
               variant: "success",
             });
-
 
             const receipt = await waitForReceipt({
               client,

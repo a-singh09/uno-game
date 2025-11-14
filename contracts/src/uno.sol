@@ -21,8 +21,8 @@ contract UnoGame is ReentrancyGuard {
 
     mapping(uint256 => Game) private games;
 
-    event GameCreated(uint256 indexed gameId, bytes32 creator);
-    event PlayerJoined(uint256 indexed gameId, bytes32 player);
+    event GameCreated(uint256 indexed gameId, address creator);
+    event PlayerJoined(uint256 indexed gameId, address player);
     event GameStarted(uint256 indexed gameId);
     event MoveCommitted(uint256 indexed gameId, bytes32 moveHash);
     event GameEnded(uint256 indexed gameId);
@@ -35,14 +35,30 @@ contract UnoGame is ReentrancyGuard {
         _;
     }
 
-    function createGame(bytes32 _creator) external nonReentrant returns (uint256) {
+    function createGame(address _creator, bool _isBot) external nonReentrant returns (uint256) {
         _gameIdCounter++;
         uint256 newGameId = _gameIdCounter;
 
+        address[] memory initialPlayers;
+        GameStatus initialStatus;
+
+        if (_isBot) {
+            // For bot games, add creator and a dummy bot address, mark as started
+            initialPlayers = new address[](2);
+            initialPlayers[0] = _creator;
+            initialPlayers[1] = address(0xB07); // Dummy bot address
+            initialStatus = GameStatus.Started;
+        } else {
+            // For regular games, add only creator, keep as NotStarted
+            initialPlayers = new address[](1);
+            initialPlayers[0] = _creator;
+            initialStatus = GameStatus.NotStarted;
+        }
+
         games[newGameId] = Game({
             id: newGameId,
-            players: new address[](0),
-            status: GameStatus.NotStarted,
+            players: initialPlayers,
+            status: initialStatus,
             startTime: block.timestamp,
             endTime: 0, 
             gameHash: "",
@@ -50,6 +66,11 @@ contract UnoGame is ReentrancyGuard {
         });
         _activeGames.push(newGameId);
         emit GameCreated(newGameId, _creator);
+        
+        if (_isBot) {
+            emit GameStarted(newGameId);
+        }
+        
         return newGameId;
     }
 

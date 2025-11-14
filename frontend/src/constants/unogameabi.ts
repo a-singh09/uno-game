@@ -1,252 +1,256 @@
 export const unoGameABI = [
-    {
-        "type": "function",
-        "name": "commitMove",
-        "inputs": [
-            {
-                "name": "gameId",
-                "type": "uint256",
-                "internalType": "uint256"
-            },
-            {
-                "name": "moveHash",
-                "type": "bytes32",
-                "internalType": "bytes32"
-            }
-        ],
-        "outputs": [],
-        "stateMutability": "nonpayable"
-    },
-    {
-        "type": "function",
-        "name": "createGame",
-        "inputs": [
-            {
-                "name": "_creator",
-                "type": "address",
-                "internalType": "address"
-            }
-        ],
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256",
-                "internalType": "uint256"
-            }
-        ],
-        "stateMutability": "nonpayable"
-    },
-    {
-        "type": "function",
-        "name": "endGame",
-        "inputs": [
-            {
-                "name": "gameId",
-                "type": "uint256",
-                "internalType": "uint256"
-            },
-            {
-                "name": "gameHash",
-                "type": "bytes32",
-                "internalType": "bytes32"
-            }
-        ],
-        "outputs": [],
-        "stateMutability": "nonpayable"
-    },
-    {
-        "type": "function",
-        "name": "getActiveGames",
-        "inputs": [],
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256[]",
-                "internalType": "uint256[]"
-            }
-        ],
-        "stateMutability": "view"
-    },
-    {
-        "type": "function",
-        "name": "getGame",
-        "inputs": [
-            {
-                "name": "gameId",
-                "type": "uint256",
-                "internalType": "uint256"
-            }
-        ],
-        "outputs": [
-            {
-                "name": "id",
-                "type": "uint256",
-                "internalType": "uint256"
-            },
-            {
-                "name": "players",
-                "type": "address[]",
-                "internalType": "address[]"
-            },
-            {
-                "name": "status",
-                "type": "uint8",
-                "internalType": "enum UnoGame.GameStatus"
-            },
-            {
-                "name": "startTime",
-                "type": "uint256",
-                "internalType": "uint256"
-            },
-            {
-                "name": "endTime",
-                "type": "uint256",
-                "internalType": "uint256"
-            },
-            {
-                "name": "gameHash",
-                "type": "bytes32",
-                "internalType": "bytes32"
-            },
-            {
-                "name": "moves",
-                "type": "bytes32[]",
-                "internalType": "bytes32[]"
-            }
-        ],
-        "stateMutability": "view"
-    },
-    {
-        "type": "function",
-        "name": "getNotStartedGames",
-        "inputs": [],
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256[]",
-                "internalType": "uint256[]"
-            }
-        ],
-        "stateMutability": "view"
-    },
-    {
-        "type": "function",
-        "name": "joinGame",
-        "inputs": [
-            {
-                "name": "gameId",
-                "type": "uint256",
-                "internalType": "uint256"
-            },
-            {
-                "name": "_joinee",
-                "type": "address",
-                "internalType": "address"
-            }
-        ],
-        "outputs": [],
-        "stateMutability": "nonpayable"
-    },
-    {
-        "type": "function",
-        "name": "startGame",
-        "inputs": [
-            {
-                "name": "gameId",
-                "type": "uint256",
-                "internalType": "uint256"
-            }
-        ],
-        "outputs": [],
-        "stateMutability": "nonpayable"
-    },
-    {
-        "type": "event",
-        "name": "GameCreated",
-        "inputs": [
-            {
-                "name": "gameId",
-                "type": "uint256",
-                "indexed": true,
-                "internalType": "uint256"
-            },
-            {
-                "name": "creator",
-                "type": "address",
-                "indexed": false,
-                "internalType": "address"
-            }
-        ],
-        "anonymous": false
-    },
-    {
-        "type": "event",
-        "name": "GameEnded",
-        "inputs": [
-            {
-                "name": "gameId",
-                "type": "uint256",
-                "indexed": true,
-                "internalType": "uint256"
-            }
-        ],
-        "anonymous": false
-    },
-    {
-        "type": "event",
-        "name": "GameStarted",
-        "inputs": [
-            {
-                "name": "gameId",
-                "type": "uint256",
-                "indexed": true,
-                "internalType": "uint256"
-            }
-        ],
-        "anonymous": false
-    },
-    {
-        "type": "event",
-        "name": "MoveCommitted",
-        "inputs": [
-            {
-                "name": "gameId",
-                "type": "uint256",
-                "indexed": true,
-                "internalType": "uint256"
-            },
-            {
-                "name": "moveHash",
-                "type": "bytes32",
-                "indexed": false,
-                "internalType": "bytes32"
-            }
-        ],
-        "anonymous": false
-    },
-    {
-        "type": "event",
-        "name": "PlayerJoined",
-        "inputs": [
-            {
-                "name": "gameId",
-                "type": "uint256",
-                "indexed": true,
-                "internalType": "uint256"
-            },
-            {
-                "name": "player",
-                "type": "address",
-                "indexed": false,
-                "internalType": "address"
-            }
-        ],
-        "anonymous": false
-    },
-    {
-        "type": "error",
-        "name": "ReentrancyGuardReentrantCall",
-        "inputs": []
-    }
+  {
+    inputs: [],
+    name: "ReentrancyGuardReentrantCall",
+    type: "error",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "gameId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "creator",
+        type: "address",
+      },
+    ],
+    name: "GameCreated",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "gameId",
+        type: "uint256",
+      },
+    ],
+    name: "GameEnded",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "gameId",
+        type: "uint256",
+      },
+    ],
+    name: "GameStarted",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "gameId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "bytes32",
+        name: "moveHash",
+        type: "bytes32",
+      },
+    ],
+    name: "MoveCommitted",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "gameId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "player",
+        type: "address",
+      },
+    ],
+    name: "PlayerJoined",
+    type: "event",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "gameId",
+        type: "uint256",
+      },
+      {
+        internalType: "bytes32",
+        name: "moveHash",
+        type: "bytes32",
+      },
+    ],
+    name: "commitMove",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_creator",
+        type: "address",
+      },
+      {
+        internalType: "bool",
+        name: "_isBot",
+        type: "bool",
+      },
+    ],
+    name: "createGame",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "gameId",
+        type: "uint256",
+      },
+      {
+        internalType: "bytes32",
+        name: "gameHash",
+        type: "bytes32",
+      },
+    ],
+    name: "endGame",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getActiveGames",
+    outputs: [
+      {
+        internalType: "uint256[]",
+        name: "",
+        type: "uint256[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "gameId",
+        type: "uint256",
+      },
+    ],
+    name: "getGame",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "id",
+        type: "uint256",
+      },
+      {
+        internalType: "address[]",
+        name: "players",
+        type: "address[]",
+      },
+      {
+        internalType: "enum UnoGame.GameStatus",
+        name: "status",
+        type: "uint8",
+      },
+      {
+        internalType: "uint256",
+        name: "startTime",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "endTime",
+        type: "uint256",
+      },
+      {
+        internalType: "bytes32",
+        name: "gameHash",
+        type: "bytes32",
+      },
+      {
+        internalType: "bytes32[]",
+        name: "moves",
+        type: "bytes32[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getNotStartedGames",
+    outputs: [
+      {
+        internalType: "uint256[]",
+        name: "",
+        type: "uint256[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "gameId",
+        type: "uint256",
+      },
+      {
+        internalType: "address",
+        name: "_joinee",
+        type: "address",
+      },
+    ],
+    name: "joinGame",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "gameId",
+        type: "uint256",
+      },
+    ],
+    name: "startGame",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ] as const;
-  
