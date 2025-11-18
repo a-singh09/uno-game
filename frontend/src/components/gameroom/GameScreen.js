@@ -261,16 +261,10 @@ const GameScreen = ({
             // In multiplayer mode with more than 2 players, position opponents around the table
             if (index === 0) {
               // Left side, middle
-              positionStyle = { position: "absolute", top: "42%", left: "0%" };
+              positionStyle = { position: "absolute", top: "26%", left: "5%" };
             } else if (index === 1) {
               // Right side, middle
-              positionStyle = { position: "absolute", top: "42%", right: "0px" };
-            } else if (index === 2) {
-              // Top left
-              positionStyle = { position: "absolute", top: "20%", left: "0px" };
-            } else if (index === 3) {
-              // Top right
-              positionStyle = { position: "absolute", top: "20%", right: "0px" };
+              positionStyle = { position: "absolute", top: "26%", right: "5%" };
             } else {
               // Additional players just use absolute positioning
               positionStyle = { position: "absolute" };

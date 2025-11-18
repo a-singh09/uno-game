@@ -308,12 +308,12 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
         };
 
         // Deal 5 cards to each player
-        for (let i = 1; i <= playerCount && i <= 6; i++) {
+        for (let i = 1; i <= playerCount && i <= 4; i++) {
           gameState[`player${i}Deck`] = shuffledCards.splice(0, 5);
         }
 
         // Initialize empty decks for unused player slots
-        for (let i = playerCount + 1; i <= 6; i++) {
+        for (let i = playerCount + 1; i <= 4; i++) {
           gameState[`player${i}Deck`] = [];
         }
 

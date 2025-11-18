@@ -842,7 +842,7 @@ const Room = () => {
                       marginBottom: "2rem",
                       fontStyle: "italic"
                     }}>
-                      waiting for other players to join ({users.length}/6)<br />minimum 2 players required to start
+                      waiting for other players to join ({users.length}/4)<br />minimum 2 players required to start
                     </div>
                   </div>
 
