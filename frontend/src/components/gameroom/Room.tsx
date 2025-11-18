@@ -270,14 +270,8 @@ const Room = () => {
     socket.on('connect', handleReconnect);
     socket.on('roomRejoined', handleReconnect);
     
-    // Cleanup
-    return () => {
-      socket.off('connect', handleReconnect);
-      socket.off('roomRejoined', handleReconnect);
-    };
-
-    if (socket) {
-      socket.on(`gameStarted-${roomId}`, (data: { newState: OffChainGameState; cardHashMap: any; }) => {
+    // Set up game started event listener
+    socket.on(`gameStarted-${roomId}`, (data: { newState: OffChainGameState; cardHashMap: any; }) => {
         console.log(`Game started event received for room ${roomId}:`, data);
         
         try {
@@ -370,7 +364,15 @@ const Room = () => {
           });
         }
       });
-    }
+    
+    // Cleanup
+    return () => {
+      socket.off('connect', handleReconnect);
+      socket.off('roomRejoined', handleReconnect);
+      socket.off(`gameStarted-${roomId}`);
+      socket.off(`cardPlayed-${roomId}`);
+      socket.off(`gameStateSync-${roomId}`);
+    };
   }, [id, socket, isConnected, gameStarted]);
 
   useEffect(() => {
