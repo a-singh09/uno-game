@@ -3,6 +3,17 @@ import React from 'react';
 const GameBackground = ({ turn, currentColor, currentUser }) => {
   // Determine if it's current user's turn or opponent's turn
   const turnType = turn === currentUser ? "current" : "opponent";
+
+  // Calculate player index: "current" if it's current user's turn, otherwise opponent index (0, 1, 2...)
+  let playerIndex = "current";
+  if (turn !== currentUser && turn && currentUser) {
+    const turnPlayerNum = parseInt(turn.split(' ')[1]);
+    const currentPlayerNum = parseInt(currentUser.split(' ')[1]);
+    // Calculate relative opponent index (starts from 0)
+    let relativeIndex = turnPlayerNum - currentPlayerNum;
+    if (relativeIndex < 0) relativeIndex += 4; // Wrap around for 4 players max
+    playerIndex = relativeIndex - 1; // Adjust to start from 0
+  }
   
   // Map color codes to color names
   const colorMap = {
@@ -104,13 +115,22 @@ const GameBackground = ({ turn, currentColor, currentUser }) => {
           left: 0,
           width: '100%',
           height: '100%',
-          backgroundImage: `url('/assets/play_bg/${turnType}.svg')`,
+          backgroundImage: playerIndex === "current" 
+            ? `url('/assets/play_bg/current.svg')` 
+            : `url('/assets/play_bg/opponent.svg')`,
           backgroundSize: '142%',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           zIndex: 5,
-          transition: 'opacity 0.5s ease-in-out',
-          opacity: 0.9
+          transition: 'opacity 0.5s ease-in-out, transform 0.5s ease-in-out',
+          opacity: 0.9,
+          transform: playerIndex === "current" 
+            ? 'rotate(0deg)' 
+            : playerIndex === 0 
+              ? 'rotate(300deg)' 
+              : playerIndex === 1 
+                ? 'rotate(60deg)' 
+                : 'rotate(0deg)'
         }} 
       />
     </div>

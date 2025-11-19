@@ -61,6 +61,17 @@ const PreviewGame = () => {
   };
   const colorName = colorMap[currentColor] || 'blue';
   const turnType = currentTurn === "Player 1" ? "current" : "opponent";
+  
+  // Calculate player index: "current" if it's current user's turn, otherwise opponent index (0, 1, 2...)
+  let playerIndex: string | number = "current";
+  if (currentTurn !== "Player 1") {
+    const turnPlayerNum = parseInt(currentTurn.split(' ')[1]);
+    const currentPlayerNum = 1; // Player 1 is always the current user
+    // Calculate relative opponent index (starts from 0)
+    let relativeIndex = turnPlayerNum - currentPlayerNum;
+    if (relativeIndex < 0) relativeIndex += 4; // Wrap around for 4 players max
+    playerIndex = relativeIndex - 1; // Adjust to start from 0
+  }
 
   return (
     <div
@@ -158,13 +169,22 @@ const PreviewGame = () => {
             left: 0,
             width: '100%',
             height: '100%',
-            backgroundImage: `url('/assets/play_bg/${turnType}.svg')`,
+            backgroundImage: playerIndex === "current" 
+              ? `url('/assets/play_bg/current.svg')` 
+              : `url('/assets/play_bg/opponent.svg')`,
             backgroundSize: '142%',
             backgroundRepeat: 'no-repeat',
             backgroundPosition: 'center',
             zIndex: 5,
-            transition: 'opacity 0.5s ease-in-out',
-            opacity: 0.9
+            transition: 'opacity 0.5s ease-in-out, transform 0.5s ease-in-out',
+            opacity: 0.9,
+            transform: playerIndex === "current" 
+              ? 'rotate(0deg)' 
+              : playerIndex === 0 
+                ? 'rotate(300deg)' 
+                : playerIndex === 1 
+                  ? 'rotate(60deg)' 
+                  : 'rotate(0deg)'
           }} 
         />
       </div>
