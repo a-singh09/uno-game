@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Game from "./Game";
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import socket, { socketManager } from "@/services/socket";
-import Header from "./Header";
 import CenterInfo from "./CenterInfo";
 import { ConnectionStatusIndicator } from "@/components/ConnectionStatusIndicator";
 import { useSocketConnection } from "@/context/SocketConnectionContext";
@@ -14,7 +13,6 @@ import { getContractNew } from '../../lib/web3'
 import { applyActionToOffChainState, hashAction, startGame, storePlayerHand, getPlayerHand, createDeck, hashCard, initializeOffChainState } from '../../lib/gameLogic'
 import { updateGlobalCardHashMap } from '../../lib/globalState';
 import { useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
-import UnoGameABI from '@/constants/UnoGame.json';
 import { unoGameABI } from "@/constants/unogameabi";
 import { useReadContract, useActiveAccount, useSendTransaction } from "thirdweb/react";
 import { getContract, prepareContractCall } from "thirdweb";
@@ -37,6 +35,7 @@ const Room = () => {
   const searchParams = useSearchParams()
   const isComputerMode = searchParams.get('mode') === 'computer'
   const { isConnected, isReconnecting } = useSocketConnection();
+  const router = useRouter();
   
   //initialize socket state
   const [room] = useState(id);
@@ -577,7 +576,7 @@ const Room = () => {
     <div
       className={`Game`}
       style={{
-        height: "100vh",
+        height: "100svh",
         width: "100vw",
         backgroundImage: "url('/bg_primary.webp')",
         backgroundSize: "cover",
@@ -586,6 +585,30 @@ const Room = () => {
         backgroundAttachment: "fixed",
       }}
     >
+      <button
+        className="glossy-button glossy-button-blue"
+        style={{
+          minWidth: "56px",
+          height: "28px",
+          fontSize: "0.9rem",
+          fontWeight: "600",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "4px",
+          padding: "0 12px",
+          borderRadius: "18px",
+          boxShadow: "0 8px 16px rgba(0, 105, 227, 0.3), inset 0 -2px 0 rgba(0, 0, 0, 0.1), inset 0 2px 0 rgba(255, 255, 255, 0.3)",
+          transition: "all 0.2s ease",
+          top: "15px",
+          left: "15px"
+        }}
+        onClick={() => router.push("/play")}
+      >
+        <svg width="24" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M24 12H5M12 19l-7-7 7-7" />
+        </svg>
+      </button>
     <ConnectionStatusIndicator />
     <Toaster />
       {isComputerMode ? (
