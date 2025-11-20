@@ -319,15 +319,32 @@ const PreviewGame = () => {
         {opponents.map((opponent, index) => {
           // Position opponents around the table based on index
           let positionStyle = {};
-          if (index === 0) {
-            // Left side, middle
-            positionStyle = { position: "absolute", top: "26%", left: "5%" };
-          } else if (index === 1) {
-            // Right side, middle
-            positionStyle = { position: "absolute", top: "26%", right: "5%" };
+          if (playerCount === 2) {
+            // In computer mode or 2-player game, use simple absolute positioning for all opponents
+            positionStyle = { position: "absolute", top: "1px" };
+          } else if (playerCount === 3) {
+            // In multiplayer mode with more than 2 players, position opponents around the table
+            if (index === 0) {
+              // Left side, middle
+              positionStyle = { position: "absolute", top: "26%", left: "5%" };
+            } else if (index === 1) {
+              // Right side, middle
+              positionStyle = { position: "absolute", top: "26%", right: "5%" };
+            } else {
+              // Additional players just use absolute positioning
+              positionStyle = { position: "absolute", top: "1px" };
+            }
           } else {
-            // Additional players just use absolute positioning
-            positionStyle = { position: "absolute" };
+            if (index === 0) {
+              // Left side, middle
+              positionStyle = { position: "absolute", top: "26%", left: "5%" };
+            } else if (index === 1) {
+              // Right side, middle
+              positionStyle = { position: "absolute", top: "1px" };
+            } else {
+              // Additional players just use absolute positioning
+              positionStyle = { position: "absolute", top: "26%", right: "5%" };
+            }
           }
 
           return (
@@ -414,7 +431,10 @@ const PreviewGame = () => {
               padding: "0.5rem",
               width: "100%",
               maxWidth: "400px",
-              flexDirection: index in [0,1] ? "column" : "row"
+              flexDirection:
+                playerCount === 4
+                  ? (index === 1 ? "row" : "column")
+                  : "column"
             }}>
               {opponent.deck.map((item, i) => (
                 <div 
@@ -422,7 +442,10 @@ const PreviewGame = () => {
                   style={{
                     position: "relative",
                     margin: "0 -10px",
-                    transform: index in [0,1] ? `rotate(${i % 2 === 0 ? '-2' : '2'}deg) translateY(${-54 * i}px)` : `rotate(${i % 2 === 0 ? '-5' : '5'}deg)`,
+                    transform:
+                      (playerCount === 4 && index === 1)
+                        ? `rotate(${i % 2 === 0 ? '-5' : '5'}deg)`
+                        : `rotate(${i % 2 === 0 ? '-2' : '2'}deg) translateY(${-54 * i}px)`,
                     zIndex: i
                   }}
                 >
