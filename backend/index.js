@@ -19,7 +19,8 @@ const gameLogger = require('./gameLogger');
 const gameStateManager = require('./gameStateManager');
 
 // Set server timeout to prevent hanging connections
-server.timeout = 30000; // 30 seconds
+// Increased to 120 seconds to support long-lived WebSocket connections
+server.timeout = 120000; // 120 seconds
 
 const io = require("socket.io")(server, {
     cors: {
@@ -27,11 +28,12 @@ const io = require("socket.io")(server, {
         methods: ["GET", "POST"],
     },
     wsEngine: ws.Server,
-    pingTimeout: 20000, // 20 seconds before a client is considered disconnected
+    pingTimeout: 30000, // Increased to 30 seconds before a client is considered disconnected
     pingInterval: 10000, // Send ping every 10 seconds
-    connectTimeout: 15000, // Connection timeout
+    connectTimeout: 20000, // Increased connection timeout to 20 seconds
     maxHttpBufferSize: 1e6, // 1MB max payload size
     transports: ['websocket', 'polling'], // Prefer WebSocket, fallback to polling
+    allowEIO3: true, // Allow Engine.IO v3 clients
 });
 
 const PORT = process.env.PORT || 4000;
@@ -128,10 +130,20 @@ io.on("connection", (socket) => {
     // ============================================
     
     // 1. Heartbeat/Ping-Pong Handler
+    // COMMENTED OUT: Using Socket.IO's built-in ping/pong mechanism instead
+    // Custom implementation was causing more issues than it solved
+    /*
     socket.on('ping', () => {
-        logger.debug(`[Heartbeat] Received ping from ${socket.id}, sending pong`);
-        socket.emit('pong');
+        const timestamp = new Date().toISOString();
+        logger.debug(`[Heartbeat] ✅ Received ping from ${socket.id} at ${timestamp}, sending pong`);
+        try {
+            socket.emit('pong');
+            logger.debug(`[Heartbeat] 📤 Pong sent successfully to ${socket.id}`);
+        } catch (error) {
+            logger.error(`[Heartbeat] ❌ Error sending pong to ${socket.id}:`, error);
+        }
     });
+    */
     
     // 2. Room Rejoin Handler
     socket.on('rejoinRoom', ({ room, gameId }, callback) => {

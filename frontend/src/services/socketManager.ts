@@ -29,17 +29,19 @@ class SocketManager {
     isReconnecting: false,
     pendingActions: []
   };
-  private heartbeatTimer: NodeJS.Timeout | null = null;
-  private missedHeartbeats = 0;
-  private maxMissedHeartbeats = 3;
+  // COMMENTED OUT: Custom heartbeat causing issues, using Socket.IO's built-in instead
+  // private heartbeatTimer: NodeJS.Timeout | null = null;
+  // private missedHeartbeats = 0;
+  // private maxMissedHeartbeats = 5; // Increased from 3 to 5 for more tolerance
+  // private lastPongTime: number = Date.now();
 
   constructor(config: SocketManagerConfig) {
     this.config = {
       reconnectAttempts: config.reconnectAttempts || 10,
       reconnectDelay: config.reconnectDelay || 1000,
       reconnectDelayMax: config.reconnectDelayMax || 30000,
-      heartbeatInterval: config.heartbeatInterval || 5000,
-      timeout: config.timeout || 10000,
+      heartbeatInterval: config.heartbeatInterval || 8000, // Changed from 5000 to 8000 to align better with server's 10s interval
+      timeout: config.timeout || 20000, // Increased from 10000 to 20000 to match server pingTimeout
       ...config
     };
   }
@@ -59,7 +61,7 @@ class SocketManager {
     });
 
     this.setupEventHandlers();
-    this.startHeartbeat();
+    // this.startHeartbeat(); // COMMENTED OUT: Using Socket.IO's built-in heartbeat
     
     return this.socket;
   }
@@ -73,7 +75,7 @@ class SocketManager {
       this.updateStatus('connected');
       this.reconnectionInfo.attempts = 0;
       this.reconnectionInfo.isReconnecting = false;
-      this.missedHeartbeats = 0;
+      // this.missedHeartbeats = 0; // COMMENTED OUT: Using Socket.IO's built-in heartbeat
       
       // Process pending actions
       this.processPendingActions();
@@ -89,7 +91,7 @@ class SocketManager {
       this.updateStatus('disconnected');
       
       // Stop heartbeat when disconnected
-      this.stopHeartbeat();
+      // this.stopHeartbeat(); // COMMENTED OUT: Using Socket.IO's built-in heartbeat
       
       // Attempt to reconnect if not a manual disconnect
       if (reason !== 'io client disconnect' && reason !== 'io server disconnect') {
@@ -108,11 +110,15 @@ class SocketManager {
     });
 
     // Heartbeat handling
+    // COMMENTED OUT: Using Socket.IO's built-in ping/pong mechanism
+    /*
     this.socket.on('pong', () => {
       const timestamp = new Date().toISOString();
-      console.log(`[Heartbeat] Received pong at ${timestamp} - Missed heartbeats reset to 0`);
+      this.lastPongTime = Date.now();
+      console.log(`[Heartbeat] ✅ Received pong at ${timestamp} - Missed heartbeats reset to 0`);
       this.missedHeartbeats = 0;
     });
+    */
 
     // Custom reconnection success event
     this.socket.on('reconnected', (data: any) => {
@@ -122,6 +128,9 @@ class SocketManager {
     });
   }
 
+  // COMMENTED OUT: Custom heartbeat implementation causing issues
+  // Using Socket.IO's built-in ping/pong mechanism instead
+  /*
   private startHeartbeat(): void {
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
@@ -130,14 +139,19 @@ class SocketManager {
     this.heartbeatTimer = setInterval(() => {
       if (this.socket?.connected) {
         const timestamp = new Date().toISOString();
-        console.log(`[Heartbeat] Sending ping at ${timestamp} - Current missed: ${this.missedHeartbeats}`);
+        const timeSinceLastPong = Date.now() - this.lastPongTime;
+        console.log(`[Heartbeat] 📤 Sending ping at ${timestamp} - Current missed: ${this.missedHeartbeats}, Time since last pong: ${timeSinceLastPong}ms`);
+        
         this.socket.emit('ping');
         this.missedHeartbeats++;
         
-        if (this.missedHeartbeats > this.maxMissedHeartbeats) {
-          console.warn(`[Heartbeat] Too many missed heartbeats (${this.missedHeartbeats}/${this.maxMissedHeartbeats}), connection might be dead`);
+        // Only disconnect if we've missed too many AND it's been a long time since last pong
+        if (this.missedHeartbeats > this.maxMissedHeartbeats && timeSinceLastPong > 60000) {
+          console.error(`[Heartbeat] ❌ Too many missed heartbeats (${this.missedHeartbeats}/${this.maxMissedHeartbeats}), no pong for ${timeSinceLastPong}ms - connection appears dead`);
           this.socket.disconnect();
           this.attemptReconnect();
+        } else if (this.missedHeartbeats > this.maxMissedHeartbeats) {
+          console.warn(`[Heartbeat] ⚠️  Missed ${this.missedHeartbeats} heartbeats but only ${timeSinceLastPong}ms since last pong - giving more time`);
         }
       }
     }, this.config.heartbeatInterval);
@@ -145,11 +159,13 @@ class SocketManager {
 
   private stopHeartbeat(): void {
     if (this.heartbeatTimer) {
+      console.log('[Heartbeat] 🛑 Stopping heartbeat timer');
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;
     }
     this.missedHeartbeats = 0;
   }
+  */
 
   private attemptReconnect(): void {
     if (this.reconnectionInfo.isReconnecting || 
@@ -262,7 +278,7 @@ class SocketManager {
   }
 
   public disconnect(): void {
-    this.stopHeartbeat();
+    // this.stopHeartbeat(); // COMMENTED OUT: Using Socket.IO's built-in heartbeat
     this.reconnectionInfo = {
       attempts: 0,
       isReconnecting: false,
