@@ -256,7 +256,7 @@ const GameScreen = ({
           
           if (isComputerMode || totalPlayers === 2) {
             // In computer mode or 2-player game, use simple absolute positioning for all opponents
-            positionStyle = { position: "absolute" };
+            positionStyle = { position: "absolute", top: "1px" };
           } else if (totalPlayers === 3) {
             // In multiplayer mode with more than 2 players, position opponents around the table
             if (index === 0) {

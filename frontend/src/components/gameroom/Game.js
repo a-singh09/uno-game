@@ -1234,7 +1234,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', marginTop: "-27px" }}>
-      <GameBackground turn={turn} currentColor={currentColor} currentUser={currentUser} />
+      <GameBackground turn={turn} currentColor={currentColor} currentUser={currentUser} totalPlayers={totalPlayers} />
       {/* <MemoizedHeader roomCode={room} /> */}
       {!gameOver ? (
         <>

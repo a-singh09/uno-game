@@ -1,6 +1,6 @@
 import React from 'react';
 
-const GameBackground = ({ turn, currentColor, currentUser }) => {
+const GameBackground = ({ turn, currentColor, currentUser, totalPlayers }) => {
   // Determine if it's current user's turn or opponent's turn
   const turnType = turn === currentUser ? "current" : "opponent";
 
@@ -126,11 +126,13 @@ const GameBackground = ({ turn, currentColor, currentUser }) => {
           opacity: 0.9,
           transform: playerIndex === "current" 
             ? 'rotate(0deg)' 
-            : playerIndex === 0 
-              ? 'rotate(300deg)' 
-              : playerIndex === 1 
-                ? 'rotate(60deg)' 
-                : 'rotate(0deg)'
+            : totalPlayers === 2 && (playerIndex === 0 || playerIndex === 1)
+              ? 'rotate(0deg)'
+              : playerIndex === 0 
+                ? 'rotate(300deg)' 
+                : playerIndex === 1 
+                  ? 'rotate(60deg)' 
+                  : 'rotate(0deg)'
         }} 
       />
     </div>
