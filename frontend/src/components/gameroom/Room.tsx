@@ -743,7 +743,7 @@ const Room = () => {
                 }}>
                   {users.length === 1 && currentUser !== "Player 1"
                     ? "Player 1 has left the game." 
-                    : `waiting for other players to join (${users.length}/6)`}
+                    : `waiting for other players to join (${users.length}/4)`}
                 </div>
               </div>
             </div>
