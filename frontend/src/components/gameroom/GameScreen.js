@@ -267,7 +267,7 @@ const GameScreen = ({
               positionStyle = { position: "absolute", top: "26%", right: "5%" };
             } else {
               // Additional players just use absolute positioning
-              positionStyle = { position: "absolute" };
+              positionStyle = { position: "absolute", top: "1px" };
             }
           } else {
             if (index === 0) {
@@ -275,7 +275,7 @@ const GameScreen = ({
               positionStyle = { position: "absolute", top: "26%", left: "5%" };
             } else if (index === 1) {
               // Right side, middle
-              positionStyle = { position: "absolute" };
+              positionStyle = { position: "absolute", top: "1px" };
             } else {
               // Additional players just use absolute positioning
               positionStyle = { position: "absolute", top: "26%", right: "5%" };

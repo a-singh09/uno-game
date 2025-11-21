@@ -653,3 +653,71 @@
 {"level":"info","message":"User fkqfqklCh5RphEIGAAAm disconnected: transport close. Active connections: 1","service":"gameofuno-backend","timestamp":"2025-11-18 16:47:11"}
 {"level":"info","message":"User RWkWRaA6PWcGUd0JAAAn disconnected: transport close. Active connections: 0","service":"gameofuno-backend","timestamp":"2025-11-18 16:47:11"}
 {"level":"info","message":"Shutting down gracefully...","service":"gameofuno-backend","timestamp":"2025-11-18 16:47:15"}
+{"level":"info","message":"Game state manager initialized with persistent storage and periodic cleanup","service":"gameofuno-backend","timestamp":"2025-11-21 09:41:42"}
+{"level":"info","message":"Server started on Port 4000 at 2025-11-21T04:11:42.953Z","service":"gameofuno-backend","timestamp":"2025-11-21 09:41:42"}
+{"level":"info","message":"User khApZFDSQmErEj1sAAAC connected. Active connections: 1","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:16"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD connected. Active connections: 2","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:16"}
+{"level":"info","message":"User sEfGivxoaBvXtBCKAAAG connected. Active connections: 3","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:17"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH connected. Active connections: 4","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:17"}
+{"level":"info","message":"User A9zv3HOc4hxaAeyEAAAJ connected. Active connections: 5","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:33"}
+{"level":"info","message":"User qAdTVZAKw-o44QhJAAAL connected. Active connections: 6","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:33"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD added to room 75 as Player 1","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:54"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD joined room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:54"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD requesting game state sync for room game-75, game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:54"}
+{"level":"info","message":"Attempting to restore game state by game ID 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:54"}
+{"level":"warn","message":"No game state found for room game-75 or game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:54"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD removed from room 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:54"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD added to room 75 as Player 1","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:54"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD joined room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:54"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD requesting game state sync for room game-75, game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:54"}
+{"level":"info","message":"Attempting to restore game state by game ID 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:54"}
+{"level":"warn","message":"No game state found for room game-75 or game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:42:54"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH added to room 75 as Player 2","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:05"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH joined room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:05"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH requesting game state sync for room game-75, game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:05"}
+{"level":"info","message":"Attempting to restore game state by game ID 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:05"}
+{"level":"warn","message":"No game state found for room game-75 or game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:05"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH removed from room 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:05"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH added to room 75 as Player 2","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:05"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH joined room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:05"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH requesting game state sync for room game-75, game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:05"}
+{"level":"info","message":"Attempting to restore game state by game ID 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:05"}
+{"level":"warn","message":"No game state found for room game-75 or game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:05"}
+{"level":"info","message":"Game started in room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:12"}
+{"level":"info","message":"[GAME] [2025-11-21T04:13:12.319Z] | Game: 75 | Turn: 0 | Player: SYSTEM... | Action: startGame | Details: Players: 1","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:12"}
+{"level":"info","message":"[GAME] Player 1: 0x030e255635dfE3eB318943B726870535BFe6B9FB","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:12"}
+{"level":"info","message":"[GAME] [2025-11-21T04:13:12.320Z] | Game: 75 | Turn: 0 | Player: SYSTEM... | Action: startGame | Details: First card: green 4 | Color: green | Value: 4 | Next: 0x030e25...","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:12"}
+{"level":"info","message":"Game initialized in room 75 with 4 players","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:12"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD joined room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:12"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD requesting game state sync for room game-75, game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:12"}
+{"level":"info","message":"Game state synced for user xuR6nwSkdbw_yF4yAAAD in room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:12"}
+{"level":"info","message":"Game initialized in room 75 with 4 players","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:12"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH joined room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:12"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH requesting game state sync for room game-75, game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:12"}
+{"level":"info","message":"Game state synced for user paAg58-wbPNyyc1gAAAH in room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:43:12"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH removed from room 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:22"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD removed from room 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:22"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH added to room 75 as Player 1","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD added to room 75 as Player 2","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH joined room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH requesting game state sync for room game-75, game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"Game state synced for user paAg58-wbPNyyc1gAAAH in room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH removed from room 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH added to room 75 as Player 2","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH joined room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH requesting game state sync for room game-75, game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"Game state synced for user paAg58-wbPNyyc1gAAAH in room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD joined room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD requesting game state sync for room game-75, game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"Game state synced for user xuR6nwSkdbw_yF4yAAAD in room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD removed from room 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD added to room 75 as Player 2","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD joined room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD requesting game state sync for room game-75, game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"Game state synced for user xuR6nwSkdbw_yF4yAAAD in room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD joined room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH joined room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User xuR6nwSkdbw_yF4yAAAD requesting game state sync for room game-75, game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"Game state synced for user xuR6nwSkdbw_yF4yAAAD in room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"User paAg58-wbPNyyc1gAAAH requesting game state sync for room game-75, game 75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}
+{"level":"info","message":"Game state synced for user paAg58-wbPNyyc1gAAAH in room game-75","service":"gameofuno-backend","timestamp":"2025-11-21 09:49:27"}

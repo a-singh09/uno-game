@@ -65,6 +65,60 @@ app.post("/api/create-claimable-balance", async (req, res) => {
   }
 });
 
+// API endpoint to get game state by game ID
+app.get("/api/game-state/:gameId", (req, res) => {
+  try {
+    const { gameId } = req.params;
+    
+    if (!gameId) {
+      return res.status(400).json({ error: "Game ID is required" });
+    }
+    
+    const gameData = gameStateManager.getGameStateByGameId(gameId);
+    
+    if (gameData) {
+      logger.info(`Game state retrieved for game ID ${gameId}`);
+      res.status(200).json({
+        success: true,
+        gameId,
+        roomId: gameData.roomId,
+        state: gameData.state,
+        cardHashMap: gameData.cardHashMap,
+        metadata: gameData.metadata
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: "Game state not found"
+      });
+    }
+  } catch (error) {
+    logger.error(`Error retrieving game state for game ID ${req.params.gameId}:`, error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to retrieve game state"
+    });
+  }
+});
+
+// API endpoint to get list of recent games
+app.get("/api/recent-games", (req, res) => {
+  try {
+    const recentGames = gameStateManager.getRecentGames();
+    res.status(200).json({
+      success: true,
+      games: recentGames,
+      count: recentGames.length
+    });
+  } catch (error) {
+    logger.error("Error retrieving recent games:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to retrieve recent games"
+    });
+  }
+});
+
 if (process.env.NODE_ENV === "production") {
     app.use(express.static("frontend/build"));
     app.get("*", (req, res) => {
@@ -175,6 +229,11 @@ io.on("connection", (socket) => {
                 
                 // Emit reconnected event to the socket itself
                 socket.emit('reconnected', { room, gameId });
+                
+                // Send updated room data to all users in the room (including the reconnected user)
+                const updatedRoomUsers = getUsersInRoom(room);
+                io.to(room).emit('roomData', { room, users: updatedRoomUsers });
+                logger.info(`Sent updated room data to room ${room} with ${updatedRoomUsers.length} users`);
             } else {
                 logger.warn(`Room ${room} not found for rejoin`);
                 if (callback && typeof callback === 'function') {
@@ -192,21 +251,33 @@ io.on("connection", (socket) => {
     // 3. Game State Sync Handler
     socket.on('requestGameStateSync', ({ roomId, gameId }) => {
         try {
-            logger.info(`User ${socket.id} requesting game state sync for room ${roomId}`);
+            logger.info(`User ${socket.id} requesting game state sync for room ${roomId}, game ${gameId}`);
             
-            // Fetch current game state
-            const gameState = gameStateManager.getGameState(roomId);
-            const cardHashMap = gameStateManager.getCardHashMap(roomId);
+            // Try to fetch by roomId first
+            let gameState = gameStateManager.getGameState(roomId);
+            let cardHashMap = gameStateManager.getCardHashMap(roomId);
+            
+            // If not found by roomId, try by gameId
+            if (!gameState && gameId) {
+                logger.info(`Attempting to restore game state by game ID ${gameId}`);
+                const gameData = gameStateManager.getGameStateByGameId(gameId);
+                if (gameData) {
+                    gameState = gameData.state;
+                    cardHashMap = gameData.cardHashMap;
+                    logger.info(`Game state restored from persistent storage for game ${gameId}`);
+                }
+            }
             
             if (gameState) {
                 // Send state back to the requesting client
                 socket.emit(`gameStateSync-${roomId}`, {
                     newState: gameState,
-                    cardHashMap: cardHashMap || {}
+                    cardHashMap: cardHashMap || {},
+                    restored: true
                 });
                 logger.info(`Game state synced for user ${socket.id} in room ${roomId}`);
             } else {
-                logger.warn(`No game state found for room ${roomId}`);
+                logger.warn(`No game state found for room ${roomId} or game ${gameId}`);
                 socket.emit(`gameStateSync-${roomId}`, {
                     error: 'Game state not found'
                 });

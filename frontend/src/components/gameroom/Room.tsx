@@ -253,12 +253,28 @@ const Room = () => {
     // Only join room if connected
     if (isConnected) {
       socket.emit("joinRoom", roomId);
+      
+      // Request game state restoration on page load/refresh
+      console.log('Requesting game state restoration for game:', id);
+      socket.emit('requestGameStateSync', { roomId, gameId: id });
     }
     
     // Handle reconnection - rejoin room when connection is restored
     const handleReconnect = () => {
       console.log('Reconnected, rejoining room:', roomId);
       socket.emit("joinRoom", roomId);
+      
+      // Re-join the lobby room to get player list (if game hasn't started)
+      if (!gameStarted && !isComputerMode) {
+        console.log('Re-joining lobby room:', room);
+        socket.emit("join", { room: room }, (error: any) => {
+          if (error) {
+            console.error('Error rejoining lobby:', error);
+          } else {
+            console.log('Successfully rejoined lobby, should receive roomData');
+          }
+        });
+      }
       
       // Request game state sync if game was started
       if (gameStarted) {
@@ -268,6 +284,7 @@ const Room = () => {
     
     socket.on('connect', handleReconnect);
     socket.on('roomRejoined', handleReconnect);
+    socket.on('reconnected', handleReconnect); // Handle socketManager's reconnected event
     
     // Set up game started event listener
     socket.on(`gameStarted-${roomId}`, (data: { newState: OffChainGameState; cardHashMap: any; }) => {
@@ -339,28 +356,63 @@ const Room = () => {
         }
       });
       
-      // Listen for game state sync response (after reconnection)
-      socket.on(`gameStateSync-${roomId}`, (data: { newState: OffChainGameState; cardHashMap: any; }) => {
+      // Listen for game state sync response (after reconnection or page refresh)
+      socket.on(`gameStateSync-${roomId}`, (data: { newState: OffChainGameState; cardHashMap: any; restored?: boolean; error?: string; }) => {
         console.log('Received game state sync:', data);
-        const { newState, cardHashMap } = data;
+        
+        if (data.error) {
+          console.log('No saved game state found, starting fresh');
+          return;
+        }
+        
+        const { newState, cardHashMap, restored } = data;
         
         if (newState) {
+          console.log('Restoring game state:', newState);
           setOffChainGameState(newState);
           
           if (cardHashMap) {
+            console.log('Restoring card hash map');
             updateGlobalCardHashMap(cardHashMap);
           }
           
-          if (account && newState.playerHands[account]) {
-            setPlayerHand(newState.playerHands[account]);
+          // Check if game was already started
+          if (newState.isStarted) {
+            console.log('Game was already started, restoring game state');
+            setGameStarted(true);
+            
+            // Restore player hand if available
+            if (account) {
+              const playerHandHashes = newState.playerHands?.[account];
+              if (playerHandHashes) {
+                console.log('Restoring player hand:', playerHandHashes);
+                setPlayerHand(playerHandHashes);
+              }
+            }
+            
+            // Set the current player
+            if (newState.players && newState.currentPlayerIndex !== undefined) {
+              const currentPlayer = newState.players[newState.currentPlayerIndex];
+              console.log('Current player:', currentPlayer);
+              setPlayerToStart(currentPlayer);
+            }
           }
           
-          toast({
-            title: "Game state synchronized",
-            description: "You're back in the game!",
-            duration: 3000,
-            variant: "success",
-          });
+          if (restored) {
+            toast({
+              title: "Game restored",
+              description: "Your game state has been restored!",
+              duration: 3000,
+              variant: "success",
+            });
+          } else {
+            toast({
+              title: "Game state synchronized",
+              description: "You're back in the game!",
+              duration: 3000,
+              variant: "success",
+            });
+          }
         }
       });
     
@@ -368,6 +420,7 @@ const Room = () => {
     return () => {
       socket.off('connect', handleReconnect);
       socket.off('roomRejoined', handleReconnect);
+      socket.off('reconnected', handleReconnect);
       socket.off(`gameStarted-${roomId}`);
       socket.off(`cardPlayed-${roomId}`);
       socket.off(`gameStateSync-${roomId}`);
@@ -375,13 +428,24 @@ const Room = () => {
   }, [id, socket, isConnected, gameStarted]);
 
   useEffect(() => {
-    socket.on("roomData", ({ users }: { users: User[] }) => {
+    const handleRoomData = ({ users }: { users: User[] }) => {
+      console.log('Received roomData event with users:', users);
       setUsers(users);
-    });
+    };
 
-    socket.on("currentUserData", ({ name }: { name: User["name"] }) => {
+    const handleCurrentUserData = ({ name }: { name: User["name"] }) => {
+      console.log('Received currentUserData event with name:', name);
       setCurrentUser(name);
-    });
+    };
+
+    socket.on("roomData", handleRoomData);
+    socket.on("currentUserData", handleCurrentUserData);
+
+    // Cleanup
+    return () => {
+      socket.off("roomData", handleRoomData);
+      socket.off("currentUserData", handleCurrentUserData);
+    };
   }, []);
 
   const fetchGameState = async (contract: UnoGameContract, gameId: bigint, account: string) => {
