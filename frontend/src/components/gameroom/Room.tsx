@@ -171,9 +171,10 @@ const Room = () => {
   // CRITICAL: Set room info with address BEFORE connection attempts
   // This ensures address is persisted even if socket isn't connected yet
   useEffect(() => {
-    if (!isComputerMode && address && room && id) {
+    if (!isComputerMode && room && id) {
+      // Always persist room info, even if address isn't available yet
       console.log('Persisting room info with address:', address);
-      socketManager.setRoomInfo(room as string, id as string, address);
+      socketManager.setRoomInfo(room as string, id as string, address || undefined);
     }
   }, [address, room, id, isComputerMode]);
 
@@ -191,12 +192,20 @@ const Room = () => {
     } else {
       // Only join if we haven't already and socket is connected
       if (isConnected && !hasJoinedRoom.current) {
-        console.log('Joining room with wallet address:', address);
-        socket.emit("join", { room: room, address: address }, (error: any) => {
+        console.log('Joining room with wallet address:', address || 'not yet available');
+        // Set flag BEFORE emitting to prevent race conditions with reconnection handler
+        hasJoinedRoom.current = true;
+
+        socket.emit("join", { room: room, address: address || null }, (error: any) => {
           if (error) {
             setRoomFull(true);
+            // Reset flag on error so user can try again
+            hasJoinedRoom.current = false;
           } else {
-            hasJoinedRoom.current = true;
+            // Update room info with address once we have it
+            if (address) {
+              socketManager.setRoomInfo(room as string, id as string, address);
+            }
           }
         });
       }
@@ -207,7 +216,9 @@ const Room = () => {
         socket.emit("quitRoom");
         socketManager.clearRoomInfo();
         hasJoinedRoom.current = false;
-        socket.off();
+        // DON'T call socket.off() here - it removes ALL listeners including
+        // roomData and currentUserData which are needed for reconnection
+        // Individual listeners are cleaned up in their respective useEffects
       }
     };
   }, [room, isComputerMode, isConnected, address]);
@@ -219,27 +230,28 @@ const Room = () => {
           console.log('Setting up contract with account:', account);
           const contractResult = await getContractNew();
           console.log('Contract result:', contractResult);
-          
+
           if (!contractResult.contract) {
             console.error('Failed to initialize contract');
             setError('Failed to initialize contract. Please try again.');
             return;
           }
-          
+
           console.log('Contract initialized:', contractResult.contract);
           setContract(contractResult.contract);
-          
+
           if (contractResult.contract && id) {
             const bigIntId = BigInt(id as string);
             console.log('Setting game ID:', bigIntId.toString());
             setGameId(bigIntId);
-            
+
             console.log('Fetching game state...');
             const gameState = await fetchGameState(contractResult.contract, bigIntId, account);
             // Set the offChainGameState from the game state
             if (gameState) {
-              console.log('Game state fetched successfully');
+              console.log('Game state fetched successfully, setting state:', gameState);
               setOffChainGameState(gameState);
+              console.log('✅ offChainGameState and gameId set successfully');
               // Note: For computer mode, we'll initialize the game in a separate useEffect
               // after all state is properly set, without blockchain transactions
               // For non-computer mode, we'll wait for the gameStarted event from the server
@@ -252,6 +264,8 @@ const Room = () => {
           console.error('Error in setup:', error);
           setError('Failed to set up the game. Please try again.');
         }
+      } else {
+        console.log('⏳ Waiting for account to become available...');
       }
     };
     setup();
@@ -310,15 +324,23 @@ const Room = () => {
       }
 
       // Re-join the lobby room to get player list (if game hasn't started)
-      if (!gameStarted && !isComputerMode && hasJoinedRoom.current) {
-        console.log('Re-joining lobby room:', room);
-        socket.emit("join", { room: room, address: address }, (error: any) => {
+      // CRITICAL: Only join if we haven't already joined to prevent duplicate joins
+      if (!gameStarted && !isComputerMode && !hasJoinedRoom.current) {
+        console.log('Re-joining lobby room:', room, 'with address:', address);
+        // Set flag BEFORE emitting to prevent race conditions
+        hasJoinedRoom.current = true;
+
+        socket.emit("join", { room: room, address: address || null }, (error: any) => {
           if (error) {
             console.error('Error rejoining lobby:', error);
+            // Reset flag on error so user can try again
+            hasJoinedRoom.current = false;
           } else {
             console.log('Successfully rejoined lobby, should receive roomData');
           }
         });
+      } else if (hasJoinedRoom.current) {
+        console.log('Already joined lobby room, skipping duplicate join');
       }
 
       // Request game state sync if game was started
@@ -425,7 +447,11 @@ const Room = () => {
         console.log('Received game state sync:', data);
 
         if (data.error) {
-          console.log('No saved game state found, starting fresh');
+          console.log('No saved game state found - this is normal if game hasn\'t started yet');
+          // This is expected behavior if:
+          // 1. Page refresh before game started (still in lobby)
+          // 2. Game state expired (> 1 hour old)
+          // 3. Server restarted and lost in-memory state
           return;
         }
 
@@ -845,13 +871,13 @@ const Room = () => {
                     }}>
                       <span style={{ fontSize: "1.25rem" }}>{'>'}</span>
                       <span style={{ fontWeight: "bold" }}>{String(index + 1).padStart(2, '0')}.</span>
-                      <span style={{ 
+                      <span style={{
                         flex: 1,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap"
                       }}>
-                        {user.name === currentUser ? `${address?.slice(0, 20)}...` : `${user.name}`}
+                        {user.name === currentUser ? (address ? `${address.slice(0, 20)}...` : user.name) : `${user.name}`}
                       </span>
                       {user.name === currentUser && (
                         <span style={{ 
@@ -969,13 +995,13 @@ const Room = () => {
                         }}>
                           <span style={{ fontSize: "1.25rem" }}>{'>'}</span>
                           <span style={{ fontWeight: "bold" }}>{String(index + 1).padStart(2, '0')}.</span>
-                          <span style={{ 
+                          <span style={{
                             flex: 1,
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap"
                           }}>
-                            {user.name === currentUser ? `${address?.slice(0, 20)}...` : `${user.name}`}
+                            {user.name === currentUser ? (address ? `${address.slice(0, 20)}...` : user.name) : `${user.name}`}
                           </span>
                           {user.name === currentUser && (
                             <span style={{ 
