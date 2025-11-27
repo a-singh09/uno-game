@@ -29,5 +29,5 @@
     "noImplicitOverride": true
   },
   "include": ["**/*.ts", "**/*.js"],
-  "exclude": ["node_modules", "dist", "logs", "game-logs"]
+  "exclude": ["node_modules", "dist", "logs", "game-logs", "deprecated"]
 }
