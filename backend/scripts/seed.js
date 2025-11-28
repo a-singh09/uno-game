@@ -39,20 +39,19 @@ async function ensurePlayer(wallet) {
   }
 }
 
-async function ensureGame(numericId, players) {
+async function ensureGame(roomId, players) {
   try {
-    const existing = await client.query(api.games.byNumericId, { gameNumericId: numericId });
+    const existing = await client.query(api.games.byRoomId, { roomId });
     if (existing?._id) {
-      console.log("games.byNumericId found:", existing._id);
+      console.log("games.byRoomId found:", existing._id);
       return existing;
     }
     const _id = await client.mutation(api.games.create, {
-      roomId: DEMO_ROOM_ID,
-      gameNumericId: numericId,
+      roomId,
       players,
     });
     console.log("games.create:", _id);
-    return await client.query(api.games.byNumericId, { gameNumericId: numericId });
+    return await client.query(api.games.byRoomId, { roomId });
   } catch (e) {
     console.error("ensureGame failed:", e.message);
     throw e;
@@ -122,7 +121,7 @@ async function setHand(gameId, wallet) {
 
 async function main() {
   const playerId = await ensurePlayer(DEMO_WALLET);
-  const game = await ensureGame(DEMO_GAME_ID, [DEMO_WALLET]);
+  const game = await ensureGame(DEMO_ROOM_ID, [DEMO_WALLET]);
   await recordMoves(game._id, DEMO_WALLET);
   await writeLatestState(game._id);
   await setHand(game._id, DEMO_WALLET);

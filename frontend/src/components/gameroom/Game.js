@@ -72,7 +72,7 @@ const Game = ({
   // Use restored game state if available (for reconnection), otherwise use initial state
   const [gameState, dispatch] = useReducer(
     gameReducer,
-    restoredGameState || initialGameState
+    restoredGameState || INITIAL_GAME_STATE
   );
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -467,6 +467,34 @@ const Game = ({
     newGameState[`${cardPlayedBy.toLowerCase().replace(" ", "")}Deck`] =
       updatedPlayerDeck;
 
+  };
+
+  /**
+   * Handle skip card play
+   */
+  const handleSkipCardPlay = (played_card, cardDetails) => {
+    const validation = validateCardPlay(
+      played_card,
+      currentColor,
+      currentNumber
+    );
+
+    if (!validation.isValid) {
+      alert(
+        "Invalid Move! Skip cards must match either the color or number of the current card."
+      );
+      return;
+    }
+
+    const activePlayers = getActivePlayers(totalPlayers);
+    const skipResult = handleSkipCard(turn, activePlayers, playDirection);
+
+    console.log("Skip card played:", {
+      cardPlayedBy: turn,
+      nextTurn: skipResult.nextTurn,
+      skippedPlayer: skipResult.skippedPlayer,
+    });
+
     // Play the card but don't toggle turn (we'll set it manually)
     const newState = processCardPlay({
       cardPlayedBy: turn,
@@ -817,6 +845,38 @@ const Game = ({
     };
 
     updateGameState(newState);
+  };
+
+  /**
+   * Main card play handler - routes to appropriate handler based on card type
+   */
+  const onCardPlayedHandler = (played_card) => {
+    const cardDetails = extractCardDetails(played_card);
+    const cardType = getCardType(cardDetails.number);
+
+    console.log("Card played:", { played_card, cardDetails, cardType });
+
+    // Route to appropriate handler based on card type
+    switch (cardType) {
+      case "skip":
+        handleSkipCardPlay(played_card, cardDetails);
+        break;
+      case "reverse":
+        handleReverseCardPlay(played_card, cardDetails);
+        break;
+      case "draw2":
+        handleDraw2CardPlay(played_card, cardDetails);
+        break;
+      case "wild":
+        handleWildCardPlay(played_card, false);
+        break;
+      case "draw4":
+        handleWildCardPlay(played_card, true);
+        break;
+      default:
+        handleRegularCardPlay(played_card, cardDetails);
+        break;
+    }
   };
 
   /**

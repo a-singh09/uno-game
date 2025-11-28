@@ -54,8 +54,7 @@ export default defineSchema({
 
   games: defineTable({
     // Immutable metadata
-    roomId: v.string(), // Socket.IO room identifier
-    gameNumericId: v.string(), // Human-readable game ID
+    roomId: v.string(), // Socket.IO room identifier and game ID
     players: v.array(v.string()), // Player addresses (index = seat)
     createdAt: v.number(), // Unix timestamp of creation
     startedAt: v.optional(v.number()), // When game started
@@ -77,9 +76,17 @@ export default defineSchema({
     lastPlayedCardHash: v.optional(v.string()), // Last card played
     deckHash: v.optional(v.string()), // Remaining deck hash
     lastActionTimestamp: v.number(), // Last move timestamp
+    
+    // Off-chain game state fields
+    isActive: v.optional(v.boolean()), // Is game active
+    isStarted: v.optional(v.boolean()), // Has game started
+    playerHandsHash: v.optional(v.string()), // JSON string of player hands hash map
+    playerHands: v.optional(v.string()), // JSON string of player hands
+    discardPileHash: v.optional(v.string()), // Discard pile hash
+    stateHash: v.optional(v.string()), // Complete state hash
+    cardHashMap: v.optional(v.string()), // JSON string of card hash mappings
   })
     .index("by_roomId", ["roomId"])
-    .index("by_numericId", ["gameNumericId"])
     .index("by_status", ["status"]),
 
   moves: defineTable({
@@ -146,7 +153,7 @@ export default defineSchema({
  * The "birth certificate" of each game.
  *
  * What's immutable:
- * - roomId, gameNumericId, players array, createdAt
+ * - roomId, players array, createdAt
  *
  * What changes:
  * - status (NotStarted → Started → Ended)
@@ -154,8 +161,7 @@ export default defineSchema({
  * - endedAt (when game finishes)
  *
  * Indexes:
- * - by_roomId: Look up game by Socket.IO room
- * - by_numericId: Look up by human-readable ID
+ * - by_roomId: Look up game by Socket.IO room (also serves as game ID)
  * - by_status: List all active/waiting/ended games
  */
 // ===========================================================================

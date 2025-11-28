@@ -28,6 +28,7 @@ type User = {
   id: string;
   name: string;
   room: string;
+  walletAddress: string
 };
 
 // Helper function to convert OffChainGameState to Game component format
@@ -182,8 +183,8 @@ const Room = () => {
     if (isComputerMode) {
       // For computer mode, simulate having 2 players immediately
       setUsers([
-        { id: "player1", name: "Player 1", room: room as string },
-        { id: "computer", name: "Computer", room: room as string }
+        { id: "player1", name: "Player 1", room: room as string, walletAddress: "" },
+        { id: "computer", name: "Computer", room: room as string, walletAddress: "" }
       ]);
       setCurrentUser("Player 1");
 
@@ -861,7 +862,7 @@ const Room = () => {
                   marginBottom: "2rem"
                 }}>
                   {users.map((user, index) => (
-                    <div key={user.id} style={{
+                    <div key={user.walletAddress} style={{
                       display: "flex",
                       alignItems: "center",
                       gap: "0.75rem",
@@ -877,7 +878,7 @@ const Room = () => {
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap"
                       }}>
-                        {user.name === currentUser ? (address ? `${address.slice(0, 20)}...` : user.name) : `${user.name}`}
+                        {user.name === currentUser ? (address ? `${address.slice(0, 20)}...` : user.name) : `${user.walletAddress.slice(0, 20)}...`}
                       </span>
                       {user.name === currentUser && (
                         <span style={{ 
@@ -985,7 +986,7 @@ const Room = () => {
                       marginBottom: "2rem"
                     }}>
                       {users.map((user, index) => (
-                        <div key={user.id} style={{
+                        <div key={user.walletAddress} style={{
                           display: "flex",
                           alignItems: "center",
                           gap: "0.75rem",
@@ -1001,7 +1002,7 @@ const Room = () => {
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap"
                           }}>
-                            {user.name === currentUser ? (address ? `${address.slice(0, 20)}...` : user.name) : `${user.name}`}
+                            {user.name === currentUser ? (address ? `${address.slice(0, 20)}...` : user.name) : `${user.walletAddress.slice(0, 20)}...`}
                           </span>
                           {user.name === currentUser && (
                             <span style={{ 

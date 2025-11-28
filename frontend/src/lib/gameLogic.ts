@@ -151,8 +151,10 @@ export function startGame(state: OffChainGameState, socket?: any): OffChainGameS
   // Randomly choose first player
   newState.currentPlayerIndex = Math.floor(Math.random() * state.players.length);
 
+  console.log("new state: ", newState)
   newState.isStarted = true;
   newState.stateHash = hashState(newState);
+
 
   if (socket) {
     const cardHashMapObject = Object.fromEntries(getGlobalCardHashMap());

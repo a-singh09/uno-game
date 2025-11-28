@@ -34,11 +34,11 @@ async function main() {
     console.log("players.byWallet failed:", e.message);
   }
 
-  // 3) Games by numeric id (replace with a known id to test)
+  // 3) Games by room id (replace with a known id to test)
   try {
-    const gameNumericId = process.env.DEMO_GAME_ID || "123";
-    const game = await client.query(api.games.byNumericId, { gameNumericId });
-    console.log("games.byNumericId:", game);
+    const roomId = process.env.DEMO_ROOM_ID || "123";
+    const game = await client.query(api.games.byRoomId, { roomId });
+    console.log("games.byRoomId:", game);
     if (game?._id) {
       const latestState = await client.query(api.states.latestByGame, { gameId: game._id });
       console.log("states.latestByGame:", latestState);
@@ -49,8 +49,8 @@ async function main() {
 
   // 4) Moves by game (if we have a game id)
   try {
-    const gameNumericId = process.env.DEMO_GAME_ID || "123";
-    const game = await client.query(api.games.byNumericId, { gameNumericId });
+    const roomId = process.env.DEMO_ROOM_ID || "123";
+    const game = await client.query(api.games.byRoomId, { roomId });
     if (game?._id) {
       const moves = await client.query(api.moves.byGame, { gameId: game._id });
       console.log("moves.byGame:", moves);

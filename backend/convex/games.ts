@@ -11,15 +11,8 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Generate numeric game ID
-    const allGames = await ctx.db.query("games").collect();
-    const numericId = allGames.length > 0
-      ? Math.max(...allGames.map(g => parseInt(g.gameNumericId, 10) || 0)) + 1
-      : 1;
-
     return await ctx.db.insert("games", {
       roomId: args.roomId,
-      gameNumericId: numericId.toString(),
       players: args.players,
       createdAt: now,
       status: "NotStarted",
@@ -28,17 +21,6 @@ export const create = mutation({
       directionClockwise: true,
       lastActionTimestamp: now,
     });
-  },
-});
-
-// Get game by numeric ID
-export const byNumericId = query({
-  args: { numericId: v.number() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("games")
-      .withIndex("by_numericId", (q) => q.eq("gameNumericId", args.numericId.toString()))
-      .first();
   },
 });
 
@@ -138,6 +120,14 @@ export const updateState = mutation({
     lastPlayedCardHash: v.optional(v.string()),
     deckHash: v.optional(v.string()),
     discardPileHash: v.optional(v.string()),
+    status: v.optional(v.union(v.literal("NotStarted"), v.literal("Started"), v.literal("Ended"))),
+    startedAt: v.optional(v.number()),
+    isActive: v.optional(v.boolean()),
+    isStarted: v.optional(v.boolean()),
+    playerHandsHash: v.optional(v.string()),
+    playerHands: v.optional(v.string()),
+    stateHash: v.optional(v.string()),
+    cardHashMap: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { gameId, ...updates } = args;

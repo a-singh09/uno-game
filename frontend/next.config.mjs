@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ['thirdweb'],
   webpack: (config) => {
+    config.externals.push('pino-pretty', 'lokijs', 'encoding');
+    
     config.module.rules.push({
       test: /\.mp3$/, // For MP3 files
       use: [

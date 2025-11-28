@@ -2,12 +2,13 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node index.ts",
+    "start": "tsx index.ts",
+    "dev": "tsx index.ts",
     "convex:dev": "npx convex dev",
     "heroku-postbuild": "npm run build && cd frontend && npm install && npm run build"
   },
@@ -33,6 +34,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/node": "^24.10.1",
-    "@types/ws": "^8.18.1"
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.20.6"
   }
 }
