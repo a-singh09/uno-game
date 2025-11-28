@@ -108,6 +108,9 @@ const Room = () => {
   // Store restored game state for passing to Game component
   const [restoredGameState, setRestoredGameState] = useState<any>(null);
 
+  // Store restored game state for passing to Game component
+  const [restoredGameState, setRestoredGameState] = useState<any>(null);
+
   const { mutate: sendTransaction } = useSendTransaction();
 
   // Initialize computer game - simplified approach
@@ -193,6 +196,16 @@ const Room = () => {
     }
   }, [address, room, id, isComputerMode]);
 
+  // CRITICAL: Set room info with address BEFORE connection attempts
+  // This ensures address is persisted even if socket isn't connected yet
+  useEffect(() => {
+    if (!isComputerMode && room && id) {
+      // Always persist room info, even if address isn't available yet
+      console.log('Persisting room info with address:', address);
+      socketManager.setRoomInfo(room as string, id as string, address || undefined);
+    }
+  }, [address, room, id, isComputerMode]);
+
   useEffect(() => {
     if (isComputerMode) {
       // For computer mode, simulate having 2 players immediately
@@ -201,6 +214,7 @@ const Room = () => {
         { id: "computer", name: "Computer", room: room as string, walletAddress: "" }
       ]);
       setCurrentUser("Player 1");
+
 
       // We'll initialize the computer game after contract setup
       console.log('Computer mode detected, will initialize after contract setup');
@@ -212,11 +226,22 @@ const Room = () => {
         hasJoinedRoom.current = true;
 
         socket.emit("join", { room: room, address: address || null }, (error: any) => {
+        console.log('Joining room with wallet address:', address || 'not yet available');
+        // Set flag BEFORE emitting to prevent race conditions with reconnection handler
+        hasJoinedRoom.current = true;
+
+        socket.emit("join", { room: room, address: address || null }, (error: any) => {
           if (error) {
             setRoomFull(true);
             // Reset flag on error so user can try again
             hasJoinedRoom.current = false;
+            // Reset flag on error so user can try again
+            hasJoinedRoom.current = false;
           } else {
+            // Update room info with address once we have it
+            if (address) {
+              socketManager.setRoomInfo(room as string, id as string, address);
+            }
             // Update room info with address once we have it
             if (address) {
               socketManager.setRoomInfo(room as string, id as string, address);
@@ -234,8 +259,12 @@ const Room = () => {
         // DON'T call socket.off() here - it removes ALL listeners including
         // roomData and currentUserData which are needed for reconnection
         // Individual listeners are cleaned up in their respective useEffects
+        // DON'T call socket.off() here - it removes ALL listeners including
+        // roomData and currentUserData which are needed for reconnection
+        // Individual listeners are cleaned up in their respective useEffects
       }
     };
+  }, [room, isComputerMode, isConnected, address]);
   }, [room, isComputerMode, isConnected, address]);
 
   useEffect(() => {
@@ -246,26 +275,32 @@ const Room = () => {
           const contractResult = await getContractNew();
           console.log('Contract result:', contractResult);
 
+
           if (!contractResult.contract) {
             console.error('Failed to initialize contract');
             setError('Failed to initialize contract. Please try again.');
             return;
           }
 
+
           console.log('Contract initialized:', contractResult.contract);
           setContract(contractResult.contract);
+
 
           if (contractResult.contract && id) {
             const bigIntId = BigInt(id as string);
             console.log('Setting game ID:', bigIntId.toString());
             setGameId(bigIntId);
 
+
             console.log('Fetching game state...');
             const gameState = await fetchGameState(contractResult.contract, bigIntId, account);
             // Set the offChainGameState from the game state
             if (gameState) {
               console.log('Game state fetched successfully, setting state:', gameState);
+              console.log('Game state fetched successfully, setting state:', gameState);
               setOffChainGameState(gameState);
+              console.log('✅ offChainGameState and gameId set successfully');
               console.log('✅ offChainGameState and gameId set successfully');
               // Note: For computer mode, we'll initialize the game in a separate useEffect
               // after all state is properly set, without blockchain transactions
@@ -279,6 +314,8 @@ const Room = () => {
           console.error('Error in setup:', error);
           setError('Failed to set up the game. Please try again.');
         }
+      } else {
+        console.log('⏳ Waiting for account to become available...');
       } else {
         console.log('⏳ Waiting for account to become available...');
       }
@@ -320,9 +357,22 @@ const Room = () => {
 
     console.log(`Setting up room listeners for: ${roomId}`);
 
+    let hasJoinedGameRoom = false;
+    let reconnectHandled = false;
+
+    console.log(`Setting up room listeners for: ${roomId}`);
+
     // Handle reconnection - rejoin room when connection is restored
     // CONSOLIDATED: Only one handler to prevent race conditions
+    // CONSOLIDATED: Only one handler to prevent race conditions
     const handleReconnect = () => {
+      // Prevent duplicate reconnection attempts from multiple events
+      if (reconnectHandled) {
+        console.log('Reconnection already handled, skipping duplicate');
+        return;
+      }
+      reconnectHandled = true;
+
       // Prevent duplicate reconnection attempts from multiple events
       if (reconnectHandled) {
         console.log('Reconnection already handled, skipping duplicate');
@@ -338,7 +388,21 @@ const Room = () => {
         hasJoinedGameRoom = true;
       }
 
+
+      // Join game room if not already joined
+      if (!hasJoinedGameRoom) {
+        socket.emit("joinRoom", roomId);
+        hasJoinedGameRoom = true;
+      }
+
       // Re-join the lobby room to get player list (if game hasn't started)
+      // CRITICAL: Only join if we haven't already joined to prevent duplicate joins
+      if (!gameStarted && !isComputerMode && !hasJoinedRoom.current) {
+        console.log('Re-joining lobby room:', room, 'with address:', address);
+        // Set flag BEFORE emitting to prevent race conditions
+        hasJoinedRoom.current = true;
+
+        socket.emit("join", { room: room, address: address || null }, (error: any) => {
       // CRITICAL: Only join if we haven't already joined to prevent duplicate joins
       if (!gameStarted && !isComputerMode && !hasJoinedRoom.current) {
         console.log('Re-joining lobby room:', room, 'with address:', address);
@@ -350,16 +414,22 @@ const Room = () => {
             console.error('Error rejoining lobby:', error);
             // Reset flag on error so user can try again
             hasJoinedRoom.current = false;
+            // Reset flag on error so user can try again
+            hasJoinedRoom.current = false;
           } else {
             console.log('Successfully rejoined lobby, should receive roomData');
           }
         });
       } else if (hasJoinedRoom.current) {
         console.log('Already joined lobby room, skipping duplicate join');
+      } else if (hasJoinedRoom.current) {
+        console.log('Already joined lobby room, skipping duplicate join');
       }
+
 
       // Request game state sync if game was started
       if (gameStarted) {
+        console.log('Requesting game state sync for started game');
         console.log('Requesting game state sync for started game');
         socket.emit('requestGameStateSync', { roomId, gameId: id });
       }
@@ -466,7 +536,13 @@ const Room = () => {
       socket.on(`gameStateSync-${roomId}`, (data: { newState: OffChainGameState; cardHashMap: any; restored?: boolean; error?: string; }) => {
         console.log('Received game state sync:', data);
 
+
         if (data.error) {
+          console.log('No saved game state found - this is normal if game hasn\'t started yet');
+          // This is expected behavior if:
+          // 1. Page refresh before game started (still in lobby)
+          // 2. Game state expired (> 1 hour old)
+          // 3. Server restarted and lost in-memory state
           console.log('No saved game state found - this is normal if game hasn\'t started yet');
           // This is expected behavior if:
           // 1. Page refresh before game started (still in lobby)
@@ -475,21 +551,32 @@ const Room = () => {
           return;
         }
 
+
         const { newState, cardHashMap, restored } = data;
+
 
         if (newState) {
           console.log('Restoring game state:', newState);
           setOffChainGameState(newState);
+
 
           if (cardHashMap) {
             console.log('Restoring card hash map');
             updateGlobalCardHashMap(cardHashMap);
           }
 
+
           // Check if game was already started
           if (newState.isStarted) {
             console.log('Game was already started, restoring game state');
             setGameStarted(true);
+
+            // CRITICAL: Convert offChainGameState to Game.js format for restoration
+            // This allows the Game component to restore its state on page refresh
+            const gameStateForGameComponent = convertToGameComponentState(newState, account);
+            setRestoredGameState(gameStateForGameComponent);
+            console.log('Set restored game state for Game component:', gameStateForGameComponent);
+
 
             // CRITICAL: Convert offChainGameState to Game.js format for restoration
             // This allows the Game component to restore its state on page refresh
@@ -506,6 +593,7 @@ const Room = () => {
               }
             }
 
+
             // Set the current player
             if (newState.players && newState.currentPlayerIndex !== undefined) {
               const currentPlayer = newState.players[newState.currentPlayerIndex];
@@ -513,6 +601,7 @@ const Room = () => {
               setPlayerToStart(currentPlayer);
             }
           }
+
 
           if (restored) {
             toast({
@@ -797,6 +886,7 @@ const Room = () => {
           console.log('Rendering computer mode, gameStarted:', gameStarted, 'currentUser:', currentUser);
           return gameStarted ? (
             <Game room={room} currentUser={currentUser} isComputerMode={isComputerMode} playerCount={users.length} restoredGameState={restoredGameState} />
+            <Game room={room} currentUser={currentUser} isComputerMode={isComputerMode} playerCount={users.length} restoredGameState={restoredGameState} />
           ) : (
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" }}>
               <h1 className='topInfoText text-white font-2xl font-bold'>Starting game against Computer 🤖</h1>
@@ -891,6 +981,7 @@ const Room = () => {
                     }}>
                       <span style={{ fontSize: "1.25rem" }}>{'>'}</span>
                       <span style={{ fontWeight: "bold" }}>{String(index + 1).padStart(2, '0')}.</span>
+                      <span style={{
                       <span style={{
                         flex: 1,
                         overflow: "hidden",
@@ -1016,6 +1107,7 @@ const Room = () => {
                           <span style={{ fontSize: "1.25rem" }}>{'>'}</span>
                           <span style={{ fontWeight: "bold" }}>{String(index + 1).padStart(2, '0')}.</span>
                           <span style={{
+                          <span style={{
                             flex: 1,
                             overflow: "hidden",
                             textOverflow: "ellipsis",
@@ -1085,6 +1177,7 @@ const Room = () => {
               </div>
             )
             : (
+              <Game room={room} currentUser={currentUser} isComputerMode={false} playerCount={users.length} restoredGameState={restoredGameState} />
               <Game room={room} currentUser={currentUser} isComputerMode={false} playerCount={users.length} restoredGameState={restoredGameState} />
             )
         )
