@@ -58,8 +58,16 @@ const initialGameState = {
 
 const gameReducer = (state, action) => ({ ...state, ...action });
 
-const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) => {
-  const [gameState, dispatch] = useReducer(gameReducer, initialGameState);
+/**
+ * @param {Object} props
+ * @param {string} props.room
+ * @param {string} props.currentUser
+ * @param {boolean} [props.isComputerMode]
+ * @param {number} [props.playerCount]
+ * @param {Object} [props.preloadedState] - Initial game state from sync
+ */
+const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2, preloadedState = null }) => {
+  const [gameState, dispatch] = useReducer(gameReducer, preloadedState || initialGameState);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogCallback, setDialogCallback] = useState(null);

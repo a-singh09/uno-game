@@ -3005,3 +3005,80 @@
 {"level":"info","message":"Game state synced for user kCuifYNqW1rsg-iWAAAp in room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 20:49:18"}
 {"level":"info","message":"User 6qzMI_7orRzQihFNAAAn removed from room 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:50:16"}
 {"level":"info","message":"User 6qzMI_7orRzQihFNAAAn did not reconnect, removing from room 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:50:16"}
+{"level":"info","message":"Game initialized in room 188 with 4 players","service":"gameofuno-backend","timestamp":"2025-11-29 20:53:22"}
+{"level":"info","message":"Game initialized in room 188 with 4 players","service":"gameofuno-backend","timestamp":"2025-11-29 20:53:22"}
+{"level":"info","message":"Convex game ID: jd7e1hn6fvvsc8vzabb6q5jz857wbdzf, user.room: game-188, gameState.turn: Player 2","service":"gameofuno-backend","timestamp":"2025-11-29 20:53:32"}
+{"level":"info","message":"Turn split result: Player,2, turnNumber: NaN","service":"gameofuno-backend","timestamp":"2025-11-29 20:53:32"}
+{"level":"info","message":"Updating Convex game state with: currentPlayerIndex=0, turnCount=NaN, clockwise=true, color=G, value=1, currentCard=4B","service":"gameofuno-backend","timestamp":"2025-11-29 20:53:32"}
+{"level":"info","message":"Convex game ID: jd7e1hn6fvvsc8vzabb6q5jz857wbdzf, user.room: game-188, gameState.turn: Player 2","service":"gameofuno-backend","timestamp":"2025-11-29 20:53:32"}
+{"level":"info","message":"Turn split result: Player,2, turnNumber: NaN","service":"gameofuno-backend","timestamp":"2025-11-29 20:53:32"}
+{"level":"info","message":"Updating Convex game state with: currentPlayerIndex=0, turnCount=NaN, clockwise=true, color=G, value=1, currentCard=4B","service":"gameofuno-backend","timestamp":"2025-11-29 20:53:32"}
+{"level":"info","message":"User A5Q3plupRYVW_cnUAAAr connected. Active connections: 5","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:16"}
+{"level":"info","message":"User kCuifYNqW1rsg-iWAAAp disconnected: transport close. Active connections: 4","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:16"}
+{"level":"info","message":"User kCuifYNqW1rsg-iWAAAp marked as disconnected in room 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:16"}
+{"level":"info","message":"User 4UZQd0HWymv0VeuyAAAt connected. Active connections: 5","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User 4UZQd0HWymv0VeuyAAAt joined room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User Player 3 reconnected to room 188 with new socket 4UZQd0HWymv0VeuyAAAt","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User dcUfa_1U9A0pn6tAAAAv connected. Active connections: 6","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User 4UZQd0HWymv0VeuyAAAt removed from room 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User 4UZQd0HWymv0VeuyAAAt added to room 188 as Player 2","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User 4UZQd0HWymv0VeuyAAAt joined room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User 4UZQd0HWymv0VeuyAAAt requesting game state sync for room game-188, game 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"Game state synced for user 4UZQd0HWymv0VeuyAAAt in room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User 5UaT73vqzzbMz9h-AAAx connected. Active connections: 7","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User 5UaT73vqzzbMz9h-AAAx attempting to rejoin room 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User 5UaT73vqzzbMz9h-AAAx successfully rejoined room 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"Sent updated room data to room 188 with 2 users","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User 5UaT73vqzzbMz9h-AAAx attempting to rejoin room 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User 5UaT73vqzzbMz9h-AAAx successfully rejoined room 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"Sent updated room data to room 188 with 2 users","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User 4UZQd0HWymv0VeuyAAAt joined room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User 4UZQd0HWymv0VeuyAAAt requesting game state sync for room game-188, game 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"Game state synced for user 4UZQd0HWymv0VeuyAAAt in room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"Game initialized in room 188 with 4 players","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"Game initialized in room 188 with 4 players","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:28"}
+{"level":"info","message":"User eOc7EpgPmzgHTaTCAAAz connected. Active connections: 8","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:29"}
+{"level":"info","message":"Convex game ID: jd7e1hn6fvvsc8vzabb6q5jz857wbdzf, user.room: game-188, gameState.turn: Player 2","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:38"}
+{"level":"info","message":"Turn split result: Player,2, turnNumber: NaN","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:38"}
+{"level":"info","message":"Updating Convex game state with: currentPlayerIndex=0, turnCount=NaN, clockwise=true, color=G, value=1, currentCard=8R","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:38"}
+{"level":"info","message":"Convex game ID: jd7e1hn6fvvsc8vzabb6q5jz857wbdzf, user.room: game-188, gameState.turn: Player 2","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:38"}
+{"level":"info","message":"Turn split result: Player,2, turnNumber: NaN","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:38"}
+{"level":"info","message":"Updating Convex game state with: currentPlayerIndex=0, turnCount=NaN, clockwise=true, color=G, value=1, currentCard=8R","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:38"}
+{"level":"info","message":"User 4UZQd0HWymv0VeuyAAAt disconnected: transport close. Active connections: 7","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:54"}
+{"level":"info","message":"User 4UZQd0HWymv0VeuyAAAt marked as disconnected in room 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:54"}
+{"level":"info","message":"User QcEayIIhpQsgiDjWAAAV disconnected: transport error. Active connections: 6","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:54"}
+{"level":"info","message":"User QcEayIIhpQsgiDjWAAAV marked as disconnected in room 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:54"}
+{"level":"info","message":"User 5UaT73vqzzbMz9h-AAAx disconnected: transport error. Active connections: 5","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:54"}
+{"level":"info","message":"User dcUfa_1U9A0pn6tAAAAv disconnected: transport close. Active connections: 4","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:54"}
+{"level":"info","message":"User ftrcWIremCReAKXEAAAT disconnected: transport close. Active connections: 3","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:54"}
+{"level":"info","message":"User ajH5gJjYWHLRXsPDAAAR disconnected: transport close. Active connections: 2","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:54"}
+{"level":"info","message":"User 5n80LZS8rJzZ0PiAAAA1 connected. Active connections: 3","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:55"}
+{"level":"info","message":"User 5n80LZS8rJzZ0PiAAAA1 attempting to rejoin room 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:55"}
+{"level":"info","message":"User 5n80LZS8rJzZ0PiAAAA1 successfully rejoined room 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:55"}
+{"level":"info","message":"Sent updated room data to room 188 with 2 users","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:55"}
+{"level":"info","message":"User HiXzMrWKVdiBoyIRAAA3 connected. Active connections: 4","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:55"}
+{"level":"info","message":"User HiXzMrWKVdiBoyIRAAA3 joined room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:55"}
+{"level":"info","message":"User HiXzMrWKVdiBoyIRAAA3 requesting game state sync for room game-188, game 188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:55"}
+{"level":"info","message":"Game state synced for user HiXzMrWKVdiBoyIRAAA3 in room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:55"}
+{"level":"info","message":"User tWxXhUUdw_dAI0GeAAA5 connected. Active connections: 5","service":"gameofuno-backend","timestamp":"2025-11-29 20:54:56"}
+{"level":"info","message":"Cleaned up disconnected user QcEayIIhpQsgiDjWAAAV from room 188","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:18"}
+{"level":"info","message":"Cleaned up disconnected user 4UZQd0HWymv0VeuyAAAt from room 188","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:18"}
+{"level":"info","message":"Periodic cleanup removed 2 disconnected users","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:18"}
+{"level":"info","message":"User eOc7EpgPmzgHTaTCAAAz disconnected: transport close. Active connections: 4","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:18"}
+{"level":"info","message":"User A5Q3plupRYVW_cnUAAAr disconnected: transport close. Active connections: 3","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:18"}
+{"level":"info","message":"User Yff3y4edkbPp6Qv0AAA8 connected. Active connections: 4","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:22"}
+{"level":"info","message":"User ThYrWUtaoPBoQaqJAAA9 connected. Active connections: 5","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:22"}
+{"level":"info","message":"User 5n80LZS8rJzZ0PiAAAA1 disconnected: transport close. Active connections: 4","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:33"}
+{"level":"info","message":"User Glf3sQzGDOQ2BvyDAAA_ connected. Active connections: 5","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}
+{"level":"info","message":"User Glf3sQzGDOQ2BvyDAAA_ added to room 188 as Player 1","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}
+{"level":"info","message":"User Glf3sQzGDOQ2BvyDAAA_ joined room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}
+{"level":"info","message":"User Glf3sQzGDOQ2BvyDAAA_ requesting game state sync for room game-188, game 188","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}
+{"level":"info","message":"Game state synced for user Glf3sQzGDOQ2BvyDAAA_ in room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}
+{"level":"info","message":"User Glf3sQzGDOQ2BvyDAAA_ removed from room 188","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}
+{"level":"info","message":"User Glf3sQzGDOQ2BvyDAAA_ added to room 188 as Player 1","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}
+{"level":"info","message":"User Glf3sQzGDOQ2BvyDAAA_ joined room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}
+{"level":"info","message":"User Glf3sQzGDOQ2BvyDAAA_ requesting game state sync for room game-188, game 188","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}
+{"level":"info","message":"Game state synced for user Glf3sQzGDOQ2BvyDAAA_ in room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}
+{"level":"info","message":"User Glf3sQzGDOQ2BvyDAAA_ joined room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}
+{"level":"info","message":"User Glf3sQzGDOQ2BvyDAAA_ requesting game state sync for room game-188, game 188","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}
+{"level":"info","message":"Game state synced for user Glf3sQzGDOQ2BvyDAAA_ in room game-188","service":"gameofuno-backend","timestamp":"2025-11-29 21:10:35"}

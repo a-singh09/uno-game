@@ -680,7 +680,7 @@ const Room = () => {
         (() => {
           console.log('Rendering computer mode, gameStarted:', gameStarted, 'currentUser:', currentUser);
           return gameStarted ? (
-            <Game room={room} currentUser={currentUser} isComputerMode={isComputerMode} playerCount={users.length} />
+            <Game room={room as string} currentUser={currentUser} isComputerMode={isComputerMode} playerCount={users.length} preloadedState={offChainGameState as any} />
           ) : (
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" }}>
               <h1 className='topInfoText text-white font-2xl font-bold'>Starting game against Computer 🤖</h1>
@@ -969,7 +969,7 @@ const Room = () => {
               </div>
             )
             : (
-              <Game room={room} currentUser={currentUser} isComputerMode={false} playerCount={users.length} />
+              <Game room={room as string} currentUser={currentUser} isComputerMode={false} playerCount={users.length} preloadedState={offChainGameState as any} />
             )
         )
       )}
