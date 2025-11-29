@@ -1,17 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
-<<<<<<<< HEAD:backend/gameLogger.ts
 import { fileURLToPath } from "url";
-import { LogEntry, PlayerAction } from "./types";
-import logger from "./logger";
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-========
 import { LogEntry, PlayerAction } from "./types";
 import logger from "./logger";
->>>>>>>> 05a0b64 (add convex function  (#10)):backend/deprecated/gameLogger.ts
 
 // Create game-logs directory if it doesn't exist
 const gameLogsDir = path.join(__dirname, "game-logs");
