@@ -1,15 +1,12 @@
+import { createHash } from "crypto";
+
 // Game logic helpers (replaces gameStateManager logic)
 
 // Generate game hash using simple string hash
 export function generateGameHash(state: any): string {
   const str = JSON.stringify(state);
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return Math.abs(hash).toString(36).padStart(16, '0').substring(0, 16);
+  const hash = createHash("sha256").update(str).digest("hex");
+  return hash.substring(0, 16);
 }
 
 // Calculate next player index

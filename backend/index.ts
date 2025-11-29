@@ -414,10 +414,9 @@ io.on("connection", (socket: Socket) => {
     async (data: {
       roomId: string;
       gameId: number;
-      playerAddresses: string[];
     }) => {
       try {
-        const { roomId, gameId, playerAddresses } = data;
+        const { roomId, gameId } = data;
         logger.info(`Game started in room ${roomId}`);
 
         // Get game by numeric ID
@@ -430,11 +429,10 @@ io.on("connection", (socket: Socket) => {
           return;
         }
 
-        // Initialize game in Convex
+        // Initialize game in Convex (uses players already in game.players)
         // @ts-ignore - gameActions will be available after Convex type generation
         const result = await convex.mutation(api.gameActions.initializeGame, {
           gameId: game._id,
-          playerAddresses,
         });
 
         if (result.success) {
@@ -447,7 +445,7 @@ io.on("connection", (socket: Socket) => {
 
           // Get hands for all players
           const hands = await Promise.all(
-            playerAddresses.map((playerAddress) =>
+            game.players.map((playerAddress) =>
               convex.query(api.hands.byPlayer, {
                 gameId: game._id,
                 playerAddress,
@@ -482,13 +480,13 @@ io.on("connection", (socket: Socket) => {
     async (data: {
       roomId: string;
       gameId: number;
-      playerAddress: string;
+      playerId: string;
       cardHash: string;
       chosenColor?: string;
     }) => {
       try {
-        const { roomId, gameId, playerAddress, cardHash, chosenColor } = data;
-        logger.info(`Card played in room ${roomId} by ${playerAddress}`);
+        const { roomId, gameId, playerId, cardHash, chosenColor } = data;
+        logger.info(`Card played in room ${roomId} by player ${playerId}`);
 
         // Get game
         const game = await convex.query(api.games.byNumericId, {
@@ -504,7 +502,7 @@ io.on("connection", (socket: Socket) => {
         // @ts-ignore - gameActions will be available after Convex type generation
         const result = await convex.mutation(api.gameActions.playCard, {
           gameId: game._id,
-          playerAddress,
+          playerId: playerId as Id<"players">,
           cardHash,
           chosenColor,
         });
@@ -519,7 +517,7 @@ io.on("connection", (socket: Socket) => {
           io.to(roomId).emit(`cardPlayed-${roomId}`, {
             action: {
               type: "playCard",
-              player: playerAddress,
+              player: playerId,
               cardHash,
             },
             newState: updatedGame,
@@ -541,10 +539,10 @@ io.on("connection", (socket: Socket) => {
   // Draw card handler
   socket.on(
     "drawCard",
-    async (data: { roomId: string; gameId: number; playerAddress: string }) => {
+    async (data: { roomId: string; gameId: number; playerId: string }) => {
       try {
-        const { roomId, gameId, playerAddress } = data;
-        logger.info(`Card drawn in room ${roomId} by ${playerAddress}`);
+        const { roomId, gameId, playerId } = data;
+        logger.info(`Card drawn in room ${roomId} by player ${playerId}`);
 
         // Get game
         const game = await convex.query(api.games.byNumericId, {
@@ -560,7 +558,7 @@ io.on("connection", (socket: Socket) => {
         // @ts-ignore - gameActions will be available after Convex type generation
         const result = await convex.mutation(api.gameActions.drawCard, {
           gameId: game._id,
-          playerAddress,
+          playerId: playerId as Id<"players">,
         });
 
         if (result.success) {
@@ -573,7 +571,7 @@ io.on("connection", (socket: Socket) => {
           io.to(roomId).emit(`cardDrawn-${roomId}`, {
             action: {
               type: "drawCard",
-              player: playerAddress,
+              player: playerId,
             },
             newState: updatedGame,
           });

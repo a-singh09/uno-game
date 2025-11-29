@@ -2,7 +2,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-// Insert all card mappings when game starts
+// Insert all card mappings when game start
 export const bulkInsert = mutation({
   args: {
     gameId: v.id("games"),

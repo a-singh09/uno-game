@@ -8,7 +8,11 @@ export const record = mutation({
     gameId: v.id("games"),
     turnNumber: v.number(),
     playerAddress: v.string(),
-    actionType: v.string(),
+    actionType: v.union(
+      v.literal("playCard"),
+      v.literal("drawCard"),
+      v.literal("skip")
+    ),
     cardHash: v.optional(v.string()),
   },
   handler: async (ctx, args) => {

@@ -15,14 +15,9 @@
  * 5. cardMappings → Hash-to-card decoder (security)
  * 6. players     → Player profiles + connection state
  *
- * Key Design Decisions:
- * ---------------------
- * ✅ Flat relational structure (no nesting)
- * ✅ Fetch on demand (only load what you need)
- * ✅ Seat position = array index in games.players
- * ✅ Sessions merged into players table
- * ✅ Player hands stored separately for security
- * ✅ Immutable event log for replay/audit
+ * Which will be deleted after the game?:
+ * ----------------------
+ * hands and cardMappings
  *
  * Data Flow Example:
  * ------------------
@@ -56,7 +51,7 @@ export default defineSchema({
     // Immutable metadata
     roomId: v.string(), // Socket.IO room identifier
     gameNumericId: v.string(), // Human-readable game ID
-    players: v.array(v.string()), // Player addresses (index = seat)
+    players: v.array(v.string()), // Wallet addresses (index = seat)
     createdAt: v.number(), // Unix timestamp of creation
     startedAt: v.optional(v.number()), // When game started
     endedAt: v.optional(v.number()), // When game ended
@@ -71,7 +66,7 @@ export default defineSchema({
     // Current game state (updated after each move)
     currentPlayerIndex: v.number(), // Whose turn (index into players)
     turnCount: v.number(), // Number of turns played
-    directionClockwise: v.boolean(), // Game direction
+    direction: v.union(v.literal("clockwise"), v.literal("counterclockwise")), // Game direction
     currentColor: v.optional(v.string()), // Active color
     currentValue: v.optional(v.string()), // Active value
     lastPlayedCardHash: v.optional(v.string()), // Last card played
@@ -85,8 +80,12 @@ export default defineSchema({
   moves: defineTable({
     gameId: v.id("games"), // Which game
     turnNumber: v.number(), // Turn when action occurred
-    playerAddress: v.string(), // Who performed the action
-    actionType: v.string(), // "playCard" | "drawCard" | "skip"
+    playerAddress: v.string(), // Wallet address who performed the action
+    actionType: v.union(
+      v.literal("playCard"),
+      v.literal("drawCard"),
+      v.literal("skip")
+    ), // "playCard" | "drawCard" | "skip"
     cardHash: v.optional(v.string()), // Card involved (if any)
     timestamp: v.number(), // Unix timestamp
   }).index("by_game_turn", ["gameId", "turnNumber"]),
@@ -96,7 +95,7 @@ export default defineSchema({
     turnNumber: v.number(), // Turn number
     stateHash: v.string(), // Hash of entire state
     currentPlayerIndex: v.number(), // Whose turn
-    directionClockwise: v.boolean(), // Game direction
+    direction: v.union(v.literal("clockwise"), v.literal("counterclockwise")), // Game direction
     currentColor: v.optional(v.string()), // Active color
     currentValue: v.optional(v.string()), // Active value
     lastPlayedCardHash: v.optional(v.string()), // Last card
@@ -108,7 +107,7 @@ export default defineSchema({
 
   hands: defineTable({
     gameId: v.id("games"), // Which game
-    playerAddress: v.string(), // Which player
+    playerAddress: v.string(), // Wallet address of player
     cardHashes: v.array(v.string()), // Array of card hashes
     updatedAt: v.number(), // Last modification timestamp
   }).index("by_game_player", ["gameId", "playerAddress"]),
@@ -117,7 +116,7 @@ export default defineSchema({
     gameId: v.id("games"), // Which game
     cardHash: v.string(), // Cryptographic hash
     color: v.string(), // "red" | "blue" | "green" | "yellow" | "wild"
-    value: v.string(), // "0"-"9" | "skip" | "reverse" | "draw2" | "wild" | "draw4"
+    value: v.string(), // "0"-"9" | "skip" | "reverse" | "draw2" | "wild" | "wild_draw4"
   })
     .index("by_game", ["gameId"])
     .index("by_game_hash", ["gameId", "cardHash"]),

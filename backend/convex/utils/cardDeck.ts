@@ -1,5 +1,6 @@
 // Card deck utilities (replaces packOfCards.ts)
 import { CardNotation } from "../../types";
+import { createHash } from "crypto";
 
 // Full UNO deck (108 cards)
 export const PACK_OF_CARDS: CardNotation[] = [
@@ -163,13 +164,7 @@ export function hashCard(
   index: number
 ): string {
   const str = `${gameId}-${notation}-${index}-${Date.now()}`;
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return Math.abs(hash).toString(36).padStart(16, '0').substring(0, 16);
+  return createHash("sha256").update(str).digest("hex").substring(0, 10);
 }
 
 // Create shuffled deck with hashes and mappings

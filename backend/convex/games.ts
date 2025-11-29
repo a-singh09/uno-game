@@ -6,26 +6,29 @@ import { v } from "convex/values";
 export const create = mutation({
   args: {
     roomId: v.string(),
-    players: v.array(v.string()),
+    players: v.array(v.string()), // Wallet addresses
   },
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Generate numeric game ID
-    const allGames = await ctx.db.query("games").collect();
-    const numericId = allGames.length > 0
-      ? Math.max(...allGames.map(g => parseInt(g.gameNumericId, 10) || 0)) + 1
-      : 1;
+    // Get most recent game by numeric ID
+    const lastGame = await ctx.db
+      .query("games")
+      .withIndex("by_numericId")
+      .order("desc")
+      .first();
+
+    const nextId = lastGame ? parseInt(lastGame.gameNumericId) + 1 : 1;
 
     return await ctx.db.insert("games", {
       roomId: args.roomId,
-      gameNumericId: numericId.toString(),
+      gameNumericId: nextId.toString(),
       players: args.players,
       createdAt: now,
       status: "NotStarted",
       currentPlayerIndex: 0,
       turnCount: 0,
-      directionClockwise: true,
+      direction: "clockwise", // initially
       lastActionTimestamp: now,
     });
   },
@@ -37,7 +40,9 @@ export const byNumericId = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("games")
-      .withIndex("by_numericId", (q) => q.eq("gameNumericId", args.numericId.toString()))
+      .withIndex("by_numericId", (q) =>
+        q.eq("gameNumericId", args.numericId.toString())
+      )
       .first();
   },
 });
@@ -64,7 +69,11 @@ export const byId = query({
 // Get games by status
 export const byStatus = query({
   args: {
-    status: v.union(v.literal("NotStarted"), v.literal("Started"), v.literal("Ended")),
+    status: v.union(
+      v.literal("NotStarted"),
+      v.literal("Started"),
+      v.literal("Ended")
+    ),
   },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -132,12 +141,11 @@ export const updateState = mutation({
     gameId: v.id("games"),
     currentPlayerIndex: v.optional(v.number()),
     turnCount: v.optional(v.number()),
-    directionClockwise: v.optional(v.boolean()),
+    direction: v.union(v.literal("clockwise"), v.literal("counterclockwise")),
     currentColor: v.optional(v.string()),
     currentValue: v.optional(v.string()),
     lastPlayedCardHash: v.optional(v.string()),
     deckHash: v.optional(v.string()),
-    discardPileHash: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { gameId, ...updates } = args;
