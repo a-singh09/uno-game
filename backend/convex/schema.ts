@@ -52,10 +52,23 @@ export default defineSchema({
     .index("by_socketId", ["socketId"])
     .index("by_currentGame", ["currentGameId"]),
 
+  gamePlayers: defineTable({
+    gameId: v.id("games"), // Foreign key to games table
+    walletAddress: v.string(), // Player's wallet address
+    seatIndex: v.number(), // Player's seat position (0, 1, 2, etc.)
+    joinedAt: v.number(), // When player joined this game
+    leftAt: v.optional(v.number()), // When player left (if they did)
+    isActive: v.boolean(), // Is player still in this game
+  })
+    .index("by_game", ["gameId"])
+    .index("by_wallet", ["walletAddress"])
+    .index("by_game_wallet", ["gameId", "walletAddress"]),
+
   games: defineTable({
     // Immutable metadata
     roomId: v.string(), // Socket.IO room identifier and game ID
-    players: v.array(v.string()), // Player addresses (index = seat)
+    gameNumericId: v.optional(v.string()), // DEPRECATED - will be removed after migration
+    players: v.array(v.string()), // Player addresses (index = seat) - kept for backward compatibility
     createdAt: v.number(), // Unix timestamp of creation
     startedAt: v.optional(v.number()), // When game started
     endedAt: v.optional(v.number()), // When game ended

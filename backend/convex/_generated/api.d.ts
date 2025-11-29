@@ -9,9 +9,12 @@
  */
 
 import type * as cardMappings from "../cardMappings.js";
+import type * as cleanup from "../cleanup.js";
 import type * as gameActions from "../gameActions.js";
+import type * as gamePlayers from "../gamePlayers.js";
 import type * as games from "../games.js";
 import type * as hands from "../hands.js";
+import type * as migrations_removeGameNumericId from "../migrations/removeGameNumericId.js";
 import type * as moves from "../moves.js";
 import type * as players from "../players.js";
 import type * as states from "../states.js";
@@ -26,9 +29,12 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   cardMappings: typeof cardMappings;
+  cleanup: typeof cleanup;
   gameActions: typeof gameActions;
+  gamePlayers: typeof gamePlayers;
   games: typeof games;
   hands: typeof hands;
+  "migrations/removeGameNumericId": typeof migrations_removeGameNumericId;
   moves: typeof moves;
   players: typeof players;
   states: typeof states;

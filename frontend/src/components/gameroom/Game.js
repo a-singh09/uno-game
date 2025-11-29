@@ -8,6 +8,7 @@ import { prepareContractCall } from "thirdweb";
 import socket from "../../services/socket";
 import { useSocketConnection } from "@/context/SocketConnectionContext";
 import { useSoundProvider } from "../../context/SoundProvider";
+import { getCardFromGlobalHashMap } from "../../lib/globalState";
 
 // Components
 import CenterInfo from "./CenterInfo";
@@ -84,6 +85,14 @@ const Game = ({
   // Refs
   const pendingActionsRef = useRef([]);
 
+  // Restore game state when restoredGameState prop changes
+  useEffect(() => {
+    if (restoredGameState) {
+      console.log('Restoring game state in Game component:', restoredGameState);
+      dispatch(restoredGameState);
+    }
+  }, [restoredGameState]);
+
   // Hooks
   const { checkBalance } = useBalanceCheck();
   const { isConnected: socketConnected, isReconnecting } =
@@ -135,6 +144,34 @@ const Game = ({
     [ACTION_CARD_CODES.DRAW_4_WILD]: playDraw4CardSound,
     [ACTION_CARD_CODES.WILD]: playWildCardSound,
   };
+
+  /**
+   * Convert card hashes to card objects for rendering
+   * Returns card string in format "COLOR-VALUE" (e.g., "RED-5", "BLUE-SKIP")
+   */
+  const convertHashesToCards = (cardHashes) => {
+    if (!Array.isArray(cardHashes)) return [];
+    
+    return cardHashes.map(hash => {
+      const card = getCardFromGlobalHashMap(hash);
+      if (card) {
+        // Return card in the format expected by the UI: "COLOR-VALUE"
+        return `${card.color}-${card.value}`;
+      }
+      // Fallback: if hash not found in map, return the hash itself
+      console.warn(`Card hash not found in global map: ${hash}`);
+      return hash;
+    });
+  };
+
+  // Convert all player decks from hashes to card objects
+  const player1DeckCards = convertHashesToCards(player1Deck);
+  const player2DeckCards = convertHashesToCards(player2Deck);
+  const player3DeckCards = convertHashesToCards(player3Deck);
+  const player4DeckCards = convertHashesToCards(player4Deck);
+  const player5DeckCards = convertHashesToCards(player5Deck);
+  const player6DeckCards = convertHashesToCards(player6Deck);
+  const playedCardsPileCards = convertHashesToCards(playedCardsPile);
 
   /**
    * Socket event emitter with buffering support
@@ -1032,16 +1069,16 @@ const Game = ({
           <GameScreen
             currentUser={currentUser}
             turn={turn}
-            player1Deck={player1Deck}
-            player2Deck={player2Deck}
-            player3Deck={player3Deck}
-            player4Deck={player4Deck}
-            player5Deck={player5Deck}
-            player6Deck={player6Deck}
+            player1Deck={player1DeckCards}
+            player2Deck={player2DeckCards}
+            player3Deck={player3DeckCards}
+            player4Deck={player4DeckCards}
+            player5Deck={player5DeckCards}
+            player6Deck={player6DeckCards}
             playerCount={playerCount}
             onCardDrawnHandler={onCardDrawnHandler}
             onCardPlayedHandler={onCardPlayedHandler}
-            playedCardsPile={playedCardsPile}
+            playedCardsPile={playedCardsPileCards}
             drawButtonPressed={drawButtonPressed}
             onSkipButtonHandler={onSkipButtonHandler}
             isComputerMode={isComputerMode}

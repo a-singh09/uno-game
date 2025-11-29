@@ -34,21 +34,35 @@ type User = {
 // Helper function to convert OffChainGameState to Game component format
 const convertToGameComponentState = (offChainState: OffChainGameState, currentAccount: string | null) => {
   // Game.js expects this format - we need to map what we can from the offChainState
-  // Note: Full state reconstruction may require the backend to save more details
-  return {
-    gameOver: false, // Will be set by game logic
-    winner: "",
-    turn: offChainState.players?.[offChainState.currentPlayerIndex] || "",
-    currentColor: offChainState.currentColor || "",
-    currentNumber: offChainState.currentValue || "",
-    // Player decks would need to be restored from server if saved there
-    // For now, we'll let the game re-sync via updateGameState events
+  // Restore player decks from playerHands data
+  const playerDecks: any = {
     player1Deck: [],
     player2Deck: [],
     player3Deck: [],
     player4Deck: [],
     player5Deck: [],
     player6Deck: [],
+  };
+
+  // Populate player decks from playerHands
+  if (offChainState.playerHands && offChainState.players) {
+    offChainState.players.forEach((playerAddress: string, index: number) => {
+      const deckKey = `player${index + 1}Deck`;
+      const playerHand = offChainState.playerHands[playerAddress];
+      if (playerHand && Array.isArray(playerHand)) {
+        playerDecks[deckKey as keyof typeof playerDecks] = playerHand;
+        console.log(`Restored ${deckKey} for ${playerAddress}:`, playerHand.length, 'cards');
+      }
+    });
+  }
+
+  return {
+    gameOver: false, // Will be set by game logic
+    winner: "",
+    turn: offChainState.players?.[offChainState.currentPlayerIndex] || "",
+    currentColor: offChainState.currentColor || "",
+    currentNumber: offChainState.currentValue || "",
+    ...playerDecks,
     playedCardsPile: offChainState.lastPlayedCardHash ? [offChainState.lastPlayedCardHash] : [],
     drawCardPile: [],
     isUnoButtonPressed: false,
@@ -362,9 +376,14 @@ const Room = () => {
       socket.emit("joinRoom", roomId);
       hasJoinedGameRoom = true;
 
-      // Request game state restoration on page load/refresh
-      console.log('Requesting game state restoration for game:', id);
-      socket.emit('requestGameStateSync', { roomId, gameId: id });
+      // Request game state restoration on page load/refresh ONLY if game has started
+      // This prevents requesting incomplete state for games that haven't started yet
+      if (gameStarted) {
+        console.log('Requesting game state restoration for started game:', id);
+        socket.emit('requestGameStateSync', { roomId, gameId: id });
+      } else {
+        console.log('Game not started yet, skipping state sync request');
+      }
     }
 
     // NOTE: socketManager's 'reconnected' event is the primary reconnection signal

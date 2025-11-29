@@ -9,6 +9,17 @@ export const create = mutation({
     players: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    // Check if game already exists to prevent duplicates
+    const existing = await ctx.db
+      .query("games")
+      .withIndex("by_roomId", (q) => q.eq("roomId", args.roomId))
+      .first();
+
+    if (existing) {
+      // Return existing game ID instead of creating duplicate
+      return existing._id;
+    }
+
     const now = Date.now();
 
     return await ctx.db.insert("games", {

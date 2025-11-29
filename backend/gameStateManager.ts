@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import {
   Game,
   GameState,
@@ -8,6 +9,10 @@ import {
   CardHashMap,
 } from "./types";
 import logger from "./logger";
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // In-memory storage for game states
 // roomId as key
@@ -331,6 +336,22 @@ logger.info(
 );
 
 export {
+  saveGameState,
+  getGameState,
+  getGameStateByGameId,
+  getCardHashMap,
+  deleteGameState,
+  hasGameState,
+  getActiveRooms,
+  cleanupOldGameStates,
+  getStats,
+  getRecentGames,
+  saveGameStatesToFile,
+  loadGameStatesFromFile,
+};
+
+// Default export for easier importing
+export default {
   saveGameState,
   getGameState,
   getGameStateByGameId,

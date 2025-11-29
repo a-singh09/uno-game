@@ -1,10 +1,10 @@
-import logger from "./logger";
+import logger from "../logger.js";
 
 export interface User {
   id: string;
   name: string;
   room: string;
-  address: string;
+  walletAddress: string;
   connected: boolean;
   disconnectedAt: number | null;
 }
@@ -13,7 +13,7 @@ interface AddUserParams {
   id: string;
   name: string;
   room: string;
-  address: string;
+  walletAddress: string;
 }
 
 interface AddUserResult {
@@ -24,7 +24,7 @@ interface AddUserResult {
 
 const users: User[] = [];
 
-const addUser = ({ id, name, room, address }: AddUserParams): AddUserResult => {
+const addUser = ({ id, name, room, walletAddress }: AddUserParams): AddUserResult => {
   // Count currently connected users in the target room
   const numberOfUsersInRoom = users.filter(
     (user) => user.room === room && user.connected !== false
@@ -36,15 +36,15 @@ const addUser = ({ id, name, room, address }: AddUserParams): AddUserResult => {
     return { error: "Room full" };
   }
 
-  // Check if user is reconnecting (same name in same room OR same address in same room)
+  // Check if user is reconnecting (same name in same room OR same walletAddress in same room)
   let existingUser = users.find(
     (u) => u.name === name && u.room === room && u.connected === false
   );
 
-  // If not found by name, try by address (for page refresh scenarios)
-  if (!existingUser && address) {
+  // If not found by name, try by walletAddress (for page refresh scenarios)
+  if (!existingUser && walletAddress) {
     existingUser = users.find(
-      (u) => u.address === address && u.room === room && u.connected === false
+      (u) => u.walletAddress === walletAddress && u.room === room && u.connected === false
     );
   }
 
@@ -53,8 +53,8 @@ const addUser = ({ id, name, room, address }: AddUserParams): AddUserResult => {
     existingUser.id = id;
     existingUser.connected = true;
     existingUser.disconnectedAt = null;
-    if (address && !existingUser.address) {
-      existingUser.address = address;
+    if (walletAddress && !existingUser.walletAddress) {
+      existingUser.walletAddress = walletAddress;
     }
     logger.info(
       `User ${name} reconnected to room ${room} with new socket ${id}`
@@ -67,13 +67,13 @@ const addUser = ({ id, name, room, address }: AddUserParams): AddUserResult => {
     id,
     name,
     room,
-    address,
+    walletAddress,
     connected: true,
     disconnectedAt: null,
   };
   users.push(newUser);
   logger.info(
-    `User ${id} added to room ${room} as ${name} with address ${address}`
+    `User ${id} added to room ${room} as ${name} with walletAddress ${walletAddress}`
   );
   return { newUser };
 };
@@ -132,12 +132,12 @@ const findUserByNameAndRoom = (
   return users.find((user) => user.name === name && user.room === room);
 };
 
-const findUserByAddressAndRoom = (
-  address: string,
+const findUserByWalletAddressAndRoom = (
+  walletAddress: string,
   room: string
 ): User | undefined | null => {
-  if (!address) return null;
-  return users.find((user) => user.address === address && user.room === room);
+  if (!walletAddress) return null;
+  return users.find((user) => user.walletAddress === walletAddress && user.room === room);
 };
 
 const getUser = (id: string): User | undefined => {
@@ -148,7 +148,7 @@ const getUsersInRoom = (room: string): User[] => {
   return users.filter((user) => user.room === room);
 };
 
-module.exports = {
+export {
   addUser,
   removeUser,
   getUser,
@@ -156,5 +156,5 @@ module.exports = {
   markUserDisconnected,
   cleanupDisconnectedUsers,
   findUserByNameAndRoom,
-  findUserByAddressAndRoom,
+  findUserByWalletAddressAndRoom,
 };

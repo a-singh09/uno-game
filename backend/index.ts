@@ -11,6 +11,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "./convex/_generated/api.js";
 // @ts-ignore - Types will be generated after running 'npx convex dev'
 import logger from "./logger.js";
+import PACK_OF_CARDS from "./packOfCards.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -304,15 +305,51 @@ io.on("connection", (socket: Socket) => {
 
         // Query game from Convex
         let game: any = null;
+        const normalizedRoomId = roomId.startsWith('game-') ? roomId.replace('game-', '') : roomId;
+        
+        logger.info(`Querying game - roomId: ${normalizedRoomId}, gameId: ${gameId}`);
+        
         if (gameId) {
           const normalizedGameId = String(gameId).startsWith('game-') ? String(gameId).replace('game-', '') : String(gameId);
           game = await convex.query(api.games.byRoomId, { roomId: normalizedGameId });
         } else {
-          const normalizedRoomId = roomId.startsWith('game-') ? roomId.replace('game-', '') : roomId;
           game = await convex.query(api.games.byRoomId, { roomId: normalizedRoomId });
         }
 
         if (game) {
+          // Log game status for debugging
+          logger.info(`Game found - ID: ${game._id}, Status: ${game.status}, isStarted: ${game.isStarted}, hasPlayerHands: ${!!game.playerHands}, lastActionTimestamp: ${game.lastActionTimestamp}`);
+          
+          // If game hasn't started yet, wait a bit and retry once (handles race condition)
+          if (game.status === "NotStarted") {
+            logger.warn(`Game ${game.roomId} has not started yet, waiting 500ms and retrying...`);
+            
+            // Wait 500ms for the gameStarted mutation to complete
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Retry fetching the game
+            if (gameId) {
+              const normalizedGameId = String(gameId).startsWith('game-') ? String(gameId).replace('game-', '') : String(gameId);
+              game = await convex.query(api.games.byRoomId, { roomId: normalizedGameId });
+            } else {
+              game = await convex.query(api.games.byRoomId, { roomId: normalizedRoomId });
+            }
+            
+            // If still not started after retry, return error
+            if (game.status === "NotStarted") {
+              logger.warn(`Game ${game.roomId} still not started after retry, skipping state sync`);
+              socket.emit(`gameStateSync-${roomId}`, {
+                newState: null,
+                cardHashMap: {},
+                restored: false,
+                error: "Game has not started yet"
+              });
+              return;
+            }
+            
+            logger.info(`Game ${game.roomId} now started after retry - Status: ${game.status}`);
+          }
+          
           // Reconstruct the off-chain game state from stored data
           const offChainState = {
             id: game.roomId,
@@ -385,12 +422,18 @@ io.on("connection", (socket: Socket) => {
         let game = await convex.query(api.games.byRoomId, { roomId: normalizedRoom });
 
         if (!game) {
-          // Create new game
-          const newGameId = await convex.mutation(api.games.create, {
-            roomId: normalizedRoom,
-            players: [],
-          });
-          game = await convex.query(api.games.byRoomId, { roomId: normalizedRoom });
+          // Create new game - use try-catch to handle race condition
+          try {
+            const newGameId = await convex.mutation(api.games.create, {
+              roomId: normalizedRoom,
+              players: [],
+            });
+            game = await convex.query(api.games.byRoomId, { roomId: normalizedRoom });
+          } catch (createError) {
+            // If creation fails (race condition), try to fetch again
+            logger.warn(`Game creation failed, attempting to fetch existing game: ${createError}`);
+            game = await convex.query(api.games.byRoomId, { roomId: normalizedRoom });
+          }
         }
 
         if (!game) {
@@ -424,9 +467,18 @@ io.on("connection", (socket: Socket) => {
               playerAddress: payload.address,
             });
           }
+
+          // Add player to gamePlayers junction table
+          await convex.mutation(api.gamePlayers.addPlayer, {
+            gameId: game._id,
+            walletAddress: payload.address,
+            seatIndex: numberOfUsersInRoom,
+          });
         }
 
+        // Join the room as-is (matching old code behavior)
         socket.join(payload.room);
+        logger.info(`User ${socket.id} joined room: ${payload.room}`);
 
         // Get updated player list
         const players = await convex.query(api.players.inGame, {
@@ -464,9 +516,11 @@ io.on("connection", (socket: Socket) => {
     }) => {
       try {
         const { roomId, newState, cardHashMap } = data;
-        // Normalize roomId - remove 'game-' prefix if present
+        // Use roomId AS-IS for broadcasting (don't normalize)
+        logger.info(`Game started in room ${roomId}`);
+        
+        // Normalize only for database queries
         const normalizedRoomId = roomId.startsWith('game-') ? roomId.replace('game-', '') : roomId;
-        logger.info(`Game started in room ${normalizedRoomId}`);
 
         // Extract game ID and players from newState
         const gameId = newState.id;
@@ -505,12 +559,18 @@ io.on("connection", (socket: Socket) => {
 
         logger.info(`Game ${gameId} started with ${playerAddresses.length} players and state stored`);
 
-        // Broadcast the game started event to all clients in the room
-        io.to(normalizedRoomId).emit(`gameStarted-${normalizedRoomId}`, {
+        // Broadcast the game started event to the room using the ORIGINAL roomId
+        // This matches the room that players actually joined
+        const socketsInRoom = await io.in(roomId).fetchSockets();
+        logger.info(`Sockets in room "${roomId}": ${socketsInRoom.map(s => s.id).join(', ')}`);
+        
+        // Emit to the room with the original roomId (as players joined it)
+        io.to(roomId).emit(`gameStarted-${roomId}`, {
           newState,
           cardHashMap,
-          roomId: normalizedRoomId,
         });
+        
+        logger.info(`Broadcasted gameStarted-${roomId} event to ${socketsInRoom.length} players`);
       } catch (error) {
         logger.error("Error starting game:", error);
       }
@@ -558,8 +618,9 @@ io.on("connection", (socket: Socket) => {
             roomId: normalizedRoomId,
           });
 
-          // Broadcast to all clients in the room
-          io.to(normalizedRoomId).emit(`cardPlayed-${normalizedRoomId}`, {
+          // Broadcast to all clients in the room (both room formats)
+          const roomWithPrefix = `game-${normalizedRoomId}`;
+          io.to(normalizedRoomId).to(roomWithPrefix).emit(`cardPlayed-${normalizedRoomId}`, {
             action: {
               type: "playCard",
               player: playerAddress,
@@ -614,8 +675,9 @@ io.on("connection", (socket: Socket) => {
             roomId: normalizedRoomId,
           });
 
-          // Broadcast to all clients in the room
-          io.to(normalizedRoomId).emit(`cardDrawn-${normalizedRoomId}`, {
+          // Broadcast to all clients in the room (both room formats)
+          const roomWithPrefix = `game-${normalizedRoomId}`;
+          io.to(normalizedRoomId).to(roomWithPrefix).emit(`cardDrawn-${normalizedRoomId}`, {
             action: {
               type: "drawCard",
               player: playerAddress,
@@ -665,6 +727,11 @@ io.on("connection", (socket: Socket) => {
           });
 
           if (game) {
+            // Mark player as inactive in gamePlayers table
+            await convex.mutation(api.gamePlayers.removePlayer, {
+              gameId: game._id,
+              walletAddress: player.walletAddress,
+            });
             const players = await convex.query(api.players.inGame, {
               gameId: game._id,
             });
@@ -721,6 +788,175 @@ io.on("connection", (socket: Socket) => {
     }
   );
 
+  // Handle game initialization request (server-side initialization)
+  socket.on("requestGameInit", async (payload: any) => {
+    try {
+      const player = await convex.query(api.players.bySocketId, {
+        socketId: socket.id,
+      });
+
+      if (player && player.currentGameId) {
+        const normalizedGameId = player.currentGameId.startsWith('game-') ? player.currentGameId.replace('game-', '') : player.currentGameId;
+        const game = await convex.query(api.games.byRoomId, {
+          roomId: normalizedGameId,
+        });
+
+        if (game) {
+          const roomPlayers = await convex.query(api.players.inGame, {
+            gameId: game._id,
+          });
+          const numPlayers = roomPlayers.length;
+
+          logger.info(`Initializing game in room ${player.currentGameId} with ${numPlayers} players`);
+
+          // Shuffle utility
+          const shuffleArray = <T,>(array: T[]): T[] => {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+          };
+
+          const shuffledCards = shuffleArray([...PACK_OF_CARDS]);
+          const gameState: any = {
+            gameOver: false,
+            turn: "Player 1",
+            currentColor: "",
+            currentNumber: "",
+            playedCardsPile: [],
+            drawCardPile: [],
+          };
+
+          // Deal 5 cards to each player
+          for (let i = 1; i <= numPlayers && i <= 6; i++) {
+            gameState[`player${i}Deck`] = shuffledCards.splice(0, 5);
+          }
+
+          // Initialize empty decks for unused player slots
+          for (let i = numPlayers + 1; i <= 6; i++) {
+            gameState[`player${i}Deck`] = [];
+          }
+
+          // Find a non-action starting card
+          const ACTION_CARDS = ['skipR', 'skipG', 'skipB', 'skipY', 'D2R', 'D2G', 'D2B', 'D2Y', 'W', 'D4W'];
+          let startingCardIndex = Math.floor(Math.random() * shuffledCards.length);
+          while (ACTION_CARDS.includes(shuffledCards[startingCardIndex])) {
+            startingCardIndex = Math.floor(Math.random() * shuffledCards.length);
+          }
+
+          const startingCard = shuffledCards.splice(startingCardIndex, 1)[0];
+          gameState.playedCardsPile = [startingCard];
+          gameState.currentColor = startingCard.charAt(1);
+          gameState.currentNumber = startingCard.charAt(0);
+          gameState.drawCardPile = shuffledCards;
+
+          // Broadcast to all players in the room
+          io.to(player.currentGameId).emit("initGameState", gameState);
+          logger.info(`Game state initialized and broadcasted to room ${player.currentGameId}`);
+        }
+      }
+    } catch (error) {
+      logger.error("Error initializing game state:", error);
+    }
+  });
+
+  // Handle game initialization from client (client sends initialized state)
+  socket.on("initGameState", async (gameState: any) => {
+    try {
+      const player = await convex.query(api.players.bySocketId, {
+        socketId: socket.id,
+      });
+
+      if (player && player.currentGameId) {
+        const normalizedGameId = player.currentGameId.startsWith('game-') ? player.currentGameId.replace('game-', '') : player.currentGameId;
+        const game = await convex.query(api.games.byRoomId, {
+          roomId: normalizedGameId,
+        });
+
+        if (game) {
+          // Save game state to Convex for reconnection support
+          await convex.mutation(api.games.updateState, {
+            gameId: game._id,
+            status: "Started",
+            isActive: true,
+            isStarted: true,
+            currentPlayerIndex: 0,
+            turnCount: 0,
+            directionClockwise: true,
+            currentColor: gameState.currentColor || undefined,
+            currentValue: gameState.currentNumber || undefined,
+            lastPlayedCardHash: undefined,
+            deckHash: "",
+            discardPileHash: "",
+            stateHash: "",
+            playerHandsHash: JSON.stringify({}),
+            playerHands: JSON.stringify(gameState),
+            cardHashMap: JSON.stringify({}),
+          });
+
+          // Broadcast the game state to all players in the room
+          io.to(player.currentGameId).emit("initGameState", gameState);
+          logger.info(`Game initialized in room ${player.currentGameId} with ${Object.keys(gameState).filter(k => k.includes('Deck')).length} players`);
+        }
+      }
+    } catch (error) {
+      logger.error("Error handling initGameState:", error);
+    }
+  });
+
+  // Handle game state updates (for legacy compatibility)
+  socket.on("updateGameState", async (gameState: any) => {
+    try {
+      const player = await convex.query(api.players.bySocketId, {
+        socketId: socket.id,
+      });
+
+      if (player && player.currentGameId) {
+        const normalizedGameId = player.currentGameId.startsWith('game-') ? player.currentGameId.replace('game-', '') : player.currentGameId;
+        const game = await convex.query(api.games.byRoomId, {
+          roomId: normalizedGameId,
+        });
+
+        if (game) {
+          // Save updated game state for reconnection support
+          await convex.mutation(api.games.updateState, {
+            gameId: game._id,
+            status: "Started",
+            isActive: gameState.isActive ?? true,
+            isStarted: gameState.isStarted ?? true,
+            currentPlayerIndex: gameState.currentPlayerIndex ?? 0,
+            turnCount: Number(gameState.turnCount) || 0,
+            directionClockwise: gameState.directionClockwise ?? true,
+            currentColor: gameState.currentColor || undefined,
+            currentValue: gameState.currentValue || gameState.currentNumber || undefined,
+            lastPlayedCardHash: gameState.lastPlayedCardHash || undefined,
+            deckHash: gameState.deckHash || "",
+            discardPileHash: gameState.discardPileHash || "",
+            stateHash: gameState.stateHash || "",
+            playerHandsHash: JSON.stringify(gameState.playerHandsHash || {}),
+            playerHands: JSON.stringify(gameState.playerHands || gameState),
+            cardHashMap: JSON.stringify(gameState.cardHashMap || {}),
+          });
+
+          // Add a timestamp to track latency
+          const enhancedGameState = {
+            ...gameState,
+            _serverTimestamp: Date.now(),
+          };
+
+          // Broadcast to all players in the room
+          io.to(player.currentGameId).emit("updateGameState", enhancedGameState);
+          logger.info(`Game state updated and broadcasted to room ${player.currentGameId}`);
+        }
+      }
+    } catch (error) {
+      logger.error(`Error updating game state for socket ${socket.id}:`, error);
+      socket.emit("error", { message: "Failed to update game state" });
+    }
+  });
+
   // Disconnect handler
   socket.on("disconnect", async (reason: string) => {
     activeConnections--;
@@ -769,6 +1005,11 @@ io.on("connection", (socket: Socket) => {
                   });
 
                   if (game) {
+                    // Mark player as inactive in gamePlayers table
+                    await convex.mutation(api.gamePlayers.removePlayer, {
+                      gameId: game._id,
+                      walletAddress: currentPlayer.walletAddress,
+                    });
                     const players = await convex.query(api.players.inGame, {
                       gameId: game._id,
                     });
