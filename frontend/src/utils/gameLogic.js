@@ -46,11 +46,12 @@ export const getActivePlayers = (totalPlayers) => {
  * Get next player in turn rotation
  * @param {string} currentPlayer - Current player name
  * @param {string[]} allPlayers - Array of all active players
- * @param {number} direction - 1 for clockwise, -1 for counter-clockwise
+ * @param {string} direction - "clockwise" or "counterclockwise"
  */
-export const getNextPlayer = (currentPlayer, allPlayers, direction = 1) => {
+export const getNextPlayer = (currentPlayer, allPlayers, direction = "clockwise") => {
+  const directionValue = direction === "clockwise" ? 1 : -1;
   const currentIndex = allPlayers.indexOf(currentPlayer);
-  const nextIndex = (currentIndex + direction + allPlayers.length) % allPlayers.length;
+  const nextIndex = (currentIndex + directionValue + allPlayers.length) % allPlayers.length;
   return allPlayers[nextIndex];
 };
 

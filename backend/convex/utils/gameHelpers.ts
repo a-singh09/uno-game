@@ -42,16 +42,16 @@ export function canPlayCard(
   cardColor: string,
   cardValue: string,
   currentColor: string | undefined,
-  currentValue: string | undefined
+  currentNumber: string | undefined
 ): boolean {
   // Wild cards can always be played
   if (cardColor === "wild") return true;
 
   // No current card (game start) - any card can be played
-  if (!currentColor && !currentValue) return true;
+  if (!currentColor && !currentNumber) return true;
 
   // Match color or value
-  return cardColor === currentColor || cardValue === currentValue;
+  return cardColor === currentColor || cardValue === currentNumber;
 }
 
 // Deal initial hands

@@ -931,7 +931,7 @@ const Room = () => {
           );
           return gameStarted ? (
             <Game
-              room={room}
+              room={Array.isArray(room) ? room[0] : room}
               currentUser={currentUser}
               isComputerMode={isComputerMode}
               playerCount={users.length}
@@ -1304,7 +1304,7 @@ const Room = () => {
         </div>
       ) : (
         <Game
-          room={room}
+          room={Array.isArray(room) ? room[0] : room}
           currentUser={currentUser}
           isComputerMode={false}
           playerCount={users.length}

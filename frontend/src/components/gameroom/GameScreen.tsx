@@ -8,6 +8,33 @@ import { useSoundProvider } from "../../context/SoundProvider";
 import StyledButton from "../styled-button";
 import { useRouter } from "next/navigation";
 
+interface GameScreenProps {
+  currentUser: string;
+  turn: string;
+  player1Deck: string[];
+  player2Deck: string[];
+  player3Deck: string[];
+  player4Deck: string[];
+  player5Deck: string[];
+  player6Deck: string[];
+  playerCount: number;
+  onUnoClicked: () => void;
+  playedCardsPile: string[];
+  onCardPlayedHandler: (played_card: string) => void;
+  onCardDrawnHandler: () => void;
+  drawButtonPressed: boolean;
+  onSkipButtonHandler: () => void;
+  isComputerMode: boolean;
+  isExtraTurn: boolean;
+}
+
+// Add interface for opponent deck structure
+interface OpponentDeck {
+  name: string;
+  deck: string[];
+  displayName: string;
+}
+
 const GameScreen = ({
   currentUser,
   turn,
@@ -26,7 +53,7 @@ const GameScreen = ({
   onSkipButtonHandler,
   isComputerMode = false,
   isExtraTurn = false,
-}) => {
+}: GameScreenProps) => {
   // Get all player decks in an object
   const allPlayerDecks = {
     "Player 1": player1Deck,
@@ -38,74 +65,81 @@ const GameScreen = ({
   };
 
   // Get current player's deck
-  const playerDeck = allPlayerDecks[currentUser] || [];
-  
+  const playerDeck =
+    allPlayerDecks[currentUser as keyof typeof allPlayerDecks] || [];
+
   // Get opponent decks (all other players with cards)
-  const opponentDecks = [];
+  const opponentDecks: OpponentDeck[] = [];
   for (let i = 1; i <= playerCount; i++) {
     const playerName = `Player ${i}`;
-    if (playerName !== currentUser && allPlayerDecks[playerName]?.length > 0) {
+    if (
+      playerName !== currentUser &&
+      allPlayerDecks[playerName as keyof typeof allPlayerDecks]?.length > 0
+    ) {
       opponentDecks.push({
         name: playerName,
-        deck: allPlayerDecks[playerName],
-        displayName: isComputerMode && playerName === "Player 2" ? "Computer" : playerName
+        deck: allPlayerDecks[playerName as keyof typeof allPlayerDecks],
+        displayName:
+          isComputerMode && playerName === "Player 2" ? "Computer" : playerName,
       });
     }
   }
-  
+
   // For backward compatibility, keep opponentDeck as the first opponent
   const opponentDeck = opponentDecks[0]?.deck || [];
   const { isSoundMuted, toggleMute } = useSoundProvider();
-  const [isMusicMuted, setMusicMuted] = useState(true);
+  const [isMusicMuted, setMusicMuted] = useState<boolean>(true);
   const [playBBgMusic, { pause }] = useSound(bgMusic, { loop: true });
-  const [pulseAnimation, setPulseAnimation] = useState(false);
-  const [skipTimer, setSkipTimer] = useState(null);
-  const [skipTimeRemaining, setSkipTimeRemaining] = useState(10);
-  const skipTimerRef = useRef(null);
-  
+  const [pulseAnimation, setPulseAnimation] = useState<boolean>(false);
+  const [skipTimer, setSkipTimer] = useState<boolean>(false);
+  const [skipTimeRemaining, setSkipTimeRemaining] = useState<number>(10);
+  const skipTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Turn timer state
   const [turnTimeRemaining, setTurnTimeRemaining] = useState(10);
-  const turnTimerRef = useRef(null);
-  const [unoClicked, setUnoClicked] = useState(false);
+  const turnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [unoClicked, setUnoClicked] = useState<boolean>(false);
   const router = useRouter();
 
   // Calculate opponent name and avatar (for first opponent)
   const opponentName = opponentDecks[0]?.name || "Player 2";
   const opponentDisplayName = opponentDecks[0]?.displayName || "Opponent";
-      
+
   // Effect for turn animation
   useEffect(() => {
     setPulseAnimation(true);
     const timer = setTimeout(() => setPulseAnimation(false), 500);
     return () => clearTimeout(timer);
   }, [turn]);
-  
+
   // Effect for turn timer
   useEffect(() => {
     // Reset timer when turn changes
     setTurnTimeRemaining(10);
-    setUnoClicked(false); // Reset uno clicked state when turn changes
-    
+    setUnoClicked(false);
+
     // Clear any existing timer
     if (turnTimerRef.current) {
       clearInterval(turnTimerRef.current);
       turnTimerRef.current = null;
     }
-    
+
     // Start new timer
     turnTimerRef.current = setInterval(() => {
-      setTurnTimeRemaining(prev => {
+      setTurnTimeRemaining((prev) => {
         if (prev <= 1) {
           // Time's up - auto change turn
-          clearInterval(turnTimerRef.current);
-          turnTimerRef.current = null;
-          
+          if (turnTimerRef.current) {
+            clearInterval(turnTimerRef.current);
+            turnTimerRef.current = null;
+          }
+
           // Only execute timeout actions if Uno button wasn't clicked
           if (!unoClicked) {
             // If it's the current user's turn and they've drawn a card, skip
             if (turn === currentUser && drawButtonPressed) {
               onSkipButtonHandler();
-            } 
+            }
             // If it's an extra turn from special card, just skip (lose the extra turn)
             else if (turn === currentUser && isExtraTurn) {
               onSkipButtonHandler();
@@ -119,8 +153,8 @@ const GameScreen = ({
         }
         return prev - 1;
       });
-    }, 1000);
-    
+    }, 1000) as ReturnType<typeof setInterval>;
+
     // Cleanup function
     return () => {
       if (turnTimerRef.current) {
@@ -128,8 +162,8 @@ const GameScreen = ({
         turnTimerRef.current = null;
       }
     };
-  // Only reset timer when turn or game state changes, not when Uno button is clicked
-  }, [turn, currentUser, drawButtonPressed, unoClicked, isExtraTurn]);  // Added unoClicked and isExtraTurn to dependencies
+    // Only reset timer when turn or game state changes, not when Uno button is clicked
+  }, [turn, currentUser, drawButtonPressed, unoClicked, isExtraTurn]); // Added unoClicked and isExtraTurn to dependencies
 
   // Effect for skip timer
   useEffect(() => {
@@ -137,22 +171,25 @@ const GameScreen = ({
     if (turn === currentUser && drawButtonPressed) {
       setSkipTimer(true);
       setSkipTimeRemaining(10);
-      
+
       // Clear any existing timer
       if (skipTimerRef.current) clearInterval(skipTimerRef.current);
-      
+
       // Start countdown
       skipTimerRef.current = setInterval(() => {
-        setSkipTimeRemaining(prev => {
+        setSkipTimeRemaining((prev) => {
           if (prev <= 1) {
             // Time's up - auto skip
-            clearInterval(skipTimerRef.current);
+            if (skipTimerRef.current) {
+              clearInterval(skipTimerRef.current);
+              skipTimerRef.current = null;
+            }
             onSkipButtonHandler();
             return 0;
           }
           return prev - 1;
         });
-      }, 1000);
+      }, 1000) as ReturnType<typeof setInterval>;
     } else {
       // Clear timer when it's not the user's turn or draw button is not pressed
       setSkipTimer(false);
@@ -161,7 +198,7 @@ const GameScreen = ({
         skipTimerRef.current = null;
       }
     }
-    
+
     // Cleanup function
     return () => {
       if (skipTimerRef.current) {
@@ -172,11 +209,14 @@ const GameScreen = ({
   }, [turn, currentUser, drawButtonPressed, onSkipButtonHandler]);
 
   return (
-    <div className="game-container" style={{
-      minHeight: "100svh",
-      display: "flex",
-      flexDirection: "column",
-    }}>
+    <div
+      className="game-container"
+      style={{
+        minHeight: "100svh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       {/* Game Header */}
       <div
         className="game-header"
@@ -188,7 +228,7 @@ const GameScreen = ({
           marginTop: "1rem",
           marginLeft: "1rem",
           position: "absolute",
-          zIndex: "50"
+          zIndex: "50",
         }}
       >
         <button
@@ -204,12 +244,22 @@ const GameScreen = ({
             gap: "4px",
             padding: "0 12px",
             borderRadius: "18px",
-            boxShadow: "0 8px 16px rgba(0, 105, 227, 0.3), inset 0 -2px 0 rgba(0, 0, 0, 0.1), inset 0 2px 0 rgba(255, 255, 255, 0.3)",
+            boxShadow:
+              "0 8px 16px rgba(0, 105, 227, 0.3), inset 0 -2px 0 rgba(0, 0, 0, 0.1), inset 0 2px 0 rgba(255, 255, 255, 0.3)",
             transition: "all 0.2s ease",
           }}
           onClick={() => router.push("/play")}
         >
-          <svg width="24" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="24"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M24 12H5M12 19l-7-7 7-7" />
           </svg>
           {/* Back */}
@@ -246,14 +296,14 @@ const GameScreen = ({
           justifyContent: "center",
           gap: "2rem",
           height: "auto",
-          paddingTop: "180px"
+          paddingTop: "180px",
         }}
       >
         {opponentDecks.map((opponent, index) => {
           // Position opponents around the table based on index
           let positionStyle = {};
           const totalPlayers = opponentDecks.length + 1; // +1 for current player
-          
+
           if (isComputerMode || totalPlayers === 2) {
             // In computer mode or 2-player game, use simple absolute positioning for all opponents
             positionStyle = { position: "absolute", top: "1px" };
@@ -315,16 +365,16 @@ const GameScreen = ({
                 }}
               >
                 {turn === opponent.name && (
-                  <svg 
-                    width="2.5rem" 
-                    height="2.5rem" 
+                  <svg
+                    width="2.5rem"
+                    height="2.5rem"
                     viewBox="0 0 100 100"
                     style={{
                       position: "absolute",
                       top: 0,
                       left: 0,
                       transform: "rotate(-90deg)",
-                      zIndex: 1
+                      zIndex: 1,
                     }}
                   >
                     <circle
@@ -334,7 +384,9 @@ const GameScreen = ({
                       fill="none"
                       stroke="rgba(4, 81, 214, 0.8)"
                       strokeWidth="8"
-                      strokeDasharray={`${(turnTimeRemaining/10) * 301.6} 301.6`}
+                      strokeDasharray={`${
+                        (turnTimeRemaining / 10) * 301.6
+                      } 301.6`}
                       strokeLinecap="round"
                     />
                   </svg>
@@ -347,16 +399,26 @@ const GameScreen = ({
                     borderRadius: "50%",
                     overflow: "hidden",
                     position: "relative",
-                    boxShadow: turn === opponent.name ? "0 0 15px 5px rgba(14, 165, 233, 0.7)" : "none",
-                    transform: turn === opponent.name && pulseAnimation ? "scale(1.1)" : "scale(1)",
+                    boxShadow:
+                      turn === opponent.name
+                        ? "0 0 15px 5px rgba(14, 165, 233, 0.7)"
+                        : "none",
+                    transform:
+                      turn === opponent.name && pulseAnimation
+                        ? "scale(1.1)"
+                        : "scale(1)",
                     transition: "all 0.3s ease",
-                    zIndex: 2
+                    zIndex: 2,
                   }}
                 >
                   <img
                     src={`https://api.dicebear.com/9.x/micah/svg?seed=${opponent.name}`}
                     alt={`${opponent.displayName} Avatar`}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
                   />
                 </div>
               </div>
@@ -374,51 +436,57 @@ const GameScreen = ({
 
       {/* Game Board */}
       <div
-          className="game-board"
+        className="game-board"
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          width: "100%",
+          marginBottom: "70px",
+        }}
+      >
+        <div
+          className="card-circles"
           style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
             position: "relative",
             width: "100%",
-            marginBottom: "70px"
+            height: "12rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: "20px",
           }}
         >
-          <div
-            className="card-circles"
-            style={{
-              position: "relative",
-              width: "100%",
-              height: "12rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "20px"
+          <CommonView
+            isDrawDisabled={turn !== currentUser}
+            playedCardsPile={playedCardsPile}
+            onCardDrawnHandler={onCardDrawnHandler}
+            isUnoDisabled={turn !== currentUser || playerDeck.length !== 2}
+            onUnoClicked={() => {
+              setUnoClicked(true);
+              // Clear the turn timer when Uno is clicked
+              if (turnTimerRef.current) {
+                clearInterval(turnTimerRef.current);
+                turnTimerRef.current = null;
+              }
+              onUnoClicked();
             }}
-          >
-            <CommonView
-              isDrawDisabled={turn !== currentUser}
-              playedCardsPile={playedCardsPile}
-              onCardDrawnHandler={onCardDrawnHandler}
-              isUnoDisabled={turn !== currentUser || playerDeck.length !== 2}
-              onUnoClicked={() => {
-                setUnoClicked(true);
-                // Clear the turn timer when Uno is clicked
-                if (turnTimerRef.current) {
-                  clearInterval(turnTimerRef.current);
-                  turnTimerRef.current = null;
-                }
-                onUnoClicked();
-              }}
-            />
-          </div>
+          />
+        </div>
       </div>
 
       {/* Player View */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          {/* <button
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        {/* <button
             className="skip-button"
             disabled={turn !== currentUser || !drawButtonPressed}
             onClick={onSkipButtonHandler}
@@ -435,19 +503,19 @@ const GameScreen = ({
           >
             <img src="/images/skip.png" className="w-20" alt="Skip" />
           </button> */}
-          
-          {skipTimer && (
-            <div 
-              // className="skip-timer"
-              // style={{
-              //   marginTop: "8px",
-              //   fontSize: "1rem",
-              //   fontWeight: "bold",
-              //   color: skipTimeRemaining <= 5 ? "#ef4444" : "#10b981",
-              //   animation: skipTimeRemaining <= 5 ? "pulse 1s infinite" : "none",
-              // }}
-            >
-              {/* Auto-skip in {skipTimeRemaining}s
+
+        {skipTimer && (
+          <div
+          // className="skip-timer"
+          // style={{
+          //   marginTop: "8px",
+          //   fontSize: "1rem",
+          //   fontWeight: "bold",
+          //   color: skipTimeRemaining <= 5 ? "#ef4444" : "#10b981",
+          //   animation: skipTimeRemaining <= 5 ? "pulse 1s infinite" : "none",
+          // }}
+          >
+            {/* Auto-skip in {skipTimeRemaining}s
               <style jsx>{`
                 @keyframes pulse {
                   0% { opacity: 0.7; }
@@ -455,30 +523,30 @@ const GameScreen = ({
                   100% { opacity: 0.7; }
                 }
               `}</style> */}
-            </div>
-          )}
+          </div>
+        )}
       </div>
       <div
         className="player-section"
         style={{
           marginTop: "1rem",
-            paddingBottom: "86px"
+          paddingBottom: "86px",
+        }}
+      >
+        <div
+          className="player-info"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "absolute",
+            bottom: "38px",
+            left: "50%",
+            transform: "translateX(-50%)",
           }}
         >
-          <div
-            className="player-info"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              position: "absolute",
-              bottom: "38px",
-              left: "50%",
-              transform: "translateX(-50%)"
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center" }}>
-              {/* <div
+          <div style={{ display: "flex", alignItems: "center" }}>
+            {/* <div
                 className="avatar-container"
                 style={{
                   width: "3rem",
@@ -533,36 +601,45 @@ const GameScreen = ({
                 />
                 </div>
               </div> */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <div
-                  style={{
-                    backgroundColor: "rgba(76, 29, 29, 0.95)",
-                    borderRadius: "1.5rem",
-                    padding: "0.5rem 1rem",
-                    color: "white",
-                    fontSize: "0.75rem",
-                    fontWeight: "lighter",
-                    letterSpacing: "0.1em",
-                    fontFamily: "monospace",
-                    textAlign: "center",
-                    minWidth: "80px",
-                    visibility: turn === currentUser ? "visible" : "hidden",
-                  }}
-                >
-                  {Math.floor(turnTimeRemaining / 60).toString().padStart(2, '0')}:{(turnTimeRemaining % 60).toString().padStart(2, '0')}
-                </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: "rgba(76, 29, 29, 0.95)",
+                  borderRadius: "1.5rem",
+                  padding: "0.5rem 1rem",
+                  color: "white",
+                  fontSize: "0.75rem",
+                  fontWeight: "lighter",
+                  letterSpacing: "0.1em",
+                  fontFamily: "monospace",
+                  textAlign: "center",
+                  minWidth: "80px",
+                  visibility: turn === currentUser ? "visible" : "hidden",
+                }}
+              >
+                {Math.floor(turnTimeRemaining / 60)
+                  .toString()
+                  .padStart(2, "0")}
+                :{(turnTimeRemaining % 60).toString().padStart(2, "0")}
               </div>
             </div>
           </div>
-          <MainPlayerView
-            turn={turn}
-            mainPlayer={currentUser}
-            playerDeck={playerDeck}
-            onCardPlayedHandler={onCardPlayedHandler}
-            isSkipButtonDisabled={turn !== currentUser || !drawButtonPressed}
-            onSkipButtonHandler={onSkipButtonHandler}
-          />
         </div>
+        <MainPlayerView
+          turn={turn}
+          mainPlayer={currentUser}
+          playerDeck={playerDeck}
+          onCardPlayedHandler={onCardPlayedHandler}
+          isSkipButtonDisabled={turn !== currentUser || !drawButtonPressed}
+          onSkipButtonHandler={onSkipButtonHandler}
+        />
+      </div>
     </div>
   );
 };

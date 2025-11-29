@@ -156,7 +156,7 @@ export interface GameState {
   deckHash: string;
   discardPileHash: string;
   currentColor: string;
-  currentValue: string;
+  currentNumber: string;
   lastPlayedCardHash: string;
   stateHash: string;
   isStarted: boolean;
@@ -314,7 +314,7 @@ export interface LogEntry {
   cardHash?: string;
   cardDetails?: string;
   currentColor?: string;
-  currentValue?: string;
+  currentNumber?: string;
   nextPlayer?: string;
 }
 

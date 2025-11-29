@@ -37,8 +37,8 @@ class GameLogger {
       parts.push(`Color: ${entry.currentColor}`);
     }
 
-    if (entry.currentValue) {
-      parts.push(`Value: ${entry.currentValue}`);
+    if (entry.currentNumber) {
+      parts.push(`Value: ${entry.currentNumber}`);
     }
 
     if (entry.nextPlayer) {
@@ -86,7 +86,7 @@ class GameLogger {
     cardHash: string,
     cardDetails: string,
     currentColor: string,
-    currentValue: string,
+    currentNumber: string,
     nextPlayer: string
   ): void {
     const entry: LogEntry = {
@@ -98,7 +98,7 @@ class GameLogger {
       cardHash,
       cardDetails,
       currentColor,
-      currentValue,
+      currentNumber,
       nextPlayer,
     };
     this.log(entry);

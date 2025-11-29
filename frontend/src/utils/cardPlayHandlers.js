@@ -154,11 +154,11 @@ export const handleReverseCard = (cardPlayedBy, activePlayers, playDirection) =>
       actsLikeSkip: true,
     };
   }
-  
+
   // In 3+ player games, Reverse flips the direction
-  const newDirection = playDirection * -1;
+  const newDirection = playDirection === "clockwise" ? "counterclockwise" : "clockwise";
   const nextPlayer = getNextPlayer(cardPlayedBy, activePlayers, newDirection);
-  
+
   return {
     newDirection,
     nextTurn: nextPlayer,

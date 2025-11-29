@@ -18,8 +18,8 @@ export const GAME_CONFIG = {
 
 // Play direction
 export const PLAY_DIRECTION = {
-  CLOCKWISE: 1,
-  COUNTER_CLOCKWISE: -1,
+  CLOCKWISE: "clockwise",
+  COUNTER_CLOCKWISE: "counterclockwise",
 };
 
 // Initial game state

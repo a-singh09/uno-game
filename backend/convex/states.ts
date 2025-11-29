@@ -9,10 +9,13 @@ export const insert = mutation({
     turnNumber: v.number(),
     stateHash: v.string(),
     currentPlayerIndex: v.number(),
-    direction: v.union(v.literal("clockwise"), v.literal("counterclockwise")),
+    playDirection: v.union(
+      v.literal("clockwise"),
+      v.literal("counterclockwise")
+    ),
     deckHash: v.optional(v.string()),
     currentColor: v.optional(v.string()),
-    currentValue: v.optional(v.string()),
+    currentNumber: v.optional(v.string()),
     lastPlayedCardHash: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -21,10 +24,10 @@ export const insert = mutation({
       turnNumber: args.turnNumber,
       stateHash: args.stateHash,
       currentPlayerIndex: args.currentPlayerIndex,
-      direction: args.direction,
+      playDirection: args.playDirection,
       deckHash: args.deckHash,
       currentColor: args.currentColor,
-      currentValue: args.currentValue,
+      currentNumber: args.currentNumber,
       lastPlayedCardHash: args.lastPlayedCardHash,
       createdAt: Date.now(),
     });

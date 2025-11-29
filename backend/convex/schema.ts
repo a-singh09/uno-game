@@ -66,9 +66,9 @@ export default defineSchema({
     // Current game state (updated after each move)
     currentPlayerIndex: v.number(), // Whose turn (index into players)
     turnCount: v.number(), // Number of turns played
-    direction: v.union(v.literal("clockwise"), v.literal("counterclockwise")), // Game direction
+    playDirection: v.union(v.literal("clockwise"), v.literal("counterclockwise")), // Game direction (matches frontend)
     currentColor: v.optional(v.string()), // Active color
-    currentValue: v.optional(v.string()), // Active value
+    currentNumber: v.optional(v.string()), // Active card number/value (matches frontend)
     lastPlayedCardHash: v.optional(v.string()), // Last card played
     deckHash: v.optional(v.string()), // Remaining deck hash
     lastActionTimestamp: v.number(), // Last move timestamp
@@ -95,9 +95,9 @@ export default defineSchema({
     turnNumber: v.number(), // Turn number
     stateHash: v.string(), // Hash of entire state
     currentPlayerIndex: v.number(), // Whose turn
-    direction: v.union(v.literal("clockwise"), v.literal("counterclockwise")), // Game direction
+    playDirection: v.union(v.literal("clockwise"), v.literal("counterclockwise")), // Game direction (matches frontend)
     currentColor: v.optional(v.string()), // Active color
-    currentValue: v.optional(v.string()), // Active value
+    currentNumber: v.optional(v.string()), // Active card number/value (matches frontend)
     lastPlayedCardHash: v.optional(v.string()), // Last card
     deckHash: v.optional(v.string()), // Deck state
     createdAt: v.number(), // Unix timestamp

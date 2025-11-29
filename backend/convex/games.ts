@@ -28,7 +28,7 @@ export const create = mutation({
       status: "NotStarted",
       currentPlayerIndex: 0,
       turnCount: 0,
-      direction: "clockwise", // initially
+      playDirection: "clockwise", // initially
       lastActionTimestamp: now,
     });
   },
@@ -141,9 +141,12 @@ export const updateState = mutation({
     gameId: v.id("games"),
     currentPlayerIndex: v.optional(v.number()),
     turnCount: v.optional(v.number()),
-    direction: v.union(v.literal("clockwise"), v.literal("counterclockwise")),
+    playDirection: v.union(
+      v.literal("clockwise"),
+      v.literal("counterclockwise")
+    ),
     currentColor: v.optional(v.string()),
-    currentValue: v.optional(v.string()),
+    currentNumber: v.optional(v.string()),
     lastPlayedCardHash: v.optional(v.string()),
     deckHash: v.optional(v.string()),
   },

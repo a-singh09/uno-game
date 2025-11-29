@@ -8,27 +8,28 @@ import { GAME_CONFIG, PLAY_DIRECTION } from './gameConstants';
 
 /**
  * Initialize game state for computer mode
+ * @returns {Object} Initial game state with playDirection as literal type
  */
 export const initializeComputerGame = () => {
   const shuffledCards = shuffleArray(PACK_OF_CARDS);
-  
+
   // Deal cards to players
   const player1Deck = shuffledCards.splice(0, GAME_CONFIG.INITIAL_HAND_SIZE);
   const player2Deck = shuffledCards.splice(0, GAME_CONFIG.INITIAL_HAND_SIZE);
-  
+
   // Get a non-action starting card
   let startingCardIndex = Math.floor(Math.random() * (shuffledCards.length - ACTION_CARDS.length));
-  
+
   while (ACTION_CARDS.includes(shuffledCards[startingCardIndex])) {
     startingCardIndex = Math.floor(Math.random() * (shuffledCards.length - ACTION_CARDS.length));
   }
-  
+
   // Extract the starting card
   const playedCardsPile = shuffledCards.splice(startingCardIndex, 1);
-  
+
   // Remaining cards go to draw pile
   const drawCardPile = [...shuffledCards];
-  
+
   return {
     gameOver: false,
     turn: "Player 1",
@@ -39,7 +40,7 @@ export const initializeComputerGame = () => {
     playedCardsPile,
     drawCardPile,
     totalPlayers: 2,
-    playDirection: PLAY_DIRECTION.CLOCKWISE,
+    playDirection: /** @type {"clockwise" | "counterclockwise"} */ (PLAY_DIRECTION.CLOCKWISE),
   };
 };
 
@@ -86,7 +87,7 @@ export const initializeMultiplayerGame = (playerCount) => {
   gameState.currentNumber = playedCardsPile[0].charAt(0);
   gameState.drawCardPile = drawCardPile;
   gameState.totalPlayers = playerCount;
-  gameState.playDirection = PLAY_DIRECTION.CLOCKWISE;
-  
+  gameState.playDirection = /** @type {"clockwise" | "counterclockwise"} */ (PLAY_DIRECTION.CLOCKWISE);
+
   return gameState;
 };
