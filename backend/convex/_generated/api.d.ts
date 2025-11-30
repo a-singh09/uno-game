@@ -15,8 +15,6 @@ import type * as hands from "../hands.js";
 import type * as moves from "../moves.js";
 import type * as players from "../players.js";
 import type * as states from "../states.js";
-import type * as utils_cardDeck from "../utils/cardDeck.js";
-import type * as utils_gameHelpers from "../utils/gameHelpers.js";
 
 import type {
   ApiFromModules,
@@ -32,8 +30,6 @@ declare const fullApi: ApiFromModules<{
   moves: typeof moves;
   players: typeof players;
   states: typeof states;
-  "utils/cardDeck": typeof utils_cardDeck;
-  "utils/gameHelpers": typeof utils_gameHelpers;
 }>;
 
 /**

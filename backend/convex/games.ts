@@ -91,6 +91,48 @@ export const listAll = query({
   },
 });
 
+// Get complete game state with player hands (for realtime subscriptions)
+export const getGameState = query({
+  args: { roomId: v.string() },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_roomId", (q) => q.eq("roomId", args.roomId))
+      .first();
+
+    if (!game) return null;
+
+    // Get all player hands
+    const hands = await ctx.db
+      .query("hands")
+      .withIndex("by_game_player", (q) => q.eq("gameId", game._id))
+      .collect();
+
+    // Build player decks object
+    const playerDecks: any = {
+      player1Deck: [],
+      player2Deck: [],
+      player3Deck: [],
+      player4Deck: [],
+      player5Deck: [],
+      player6Deck: [],
+    };
+
+    game.players.forEach((playerAddress, index) => {
+      const hand = hands.find((h) => h.playerAddress === playerAddress);
+      const deckKey = `player${index + 1}Deck`;
+      playerDecks[deckKey] = hand ? hand.cardHashes : [];
+    });
+
+    return {
+      ...game,
+      ...playerDecks,
+      turn: `Player ${(game.currentPlayerIndex || 0) + 1}`,
+    };
+  },
+});
+
+
 // Add player to game
 export const addPlayer = mutation({
   args: { gameId: v.id("games"), playerAddress: v.string() },

@@ -141,3 +141,100 @@ export const leaveGame = mutation({
     return true;
   },
 });
+
+// Join a game (replaces socket.emit("join"))
+export const joinGame = mutation({
+  args: {
+    roomId: v.string(),
+    walletAddress: v.string(),
+    displayName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Find or create game
+    let game = await ctx.db
+      .query("games")
+      .withIndex("by_roomId", (q) => q.eq("roomId", args.roomId))
+      .first();
+
+    if (!game) {
+      // Create new game
+      const gameId = await ctx.db.insert("games", {
+        roomId: args.roomId,
+        gameNumericId: Math.floor(Math.random() * 1000000).toString(),
+        players: [],
+        createdAt: Date.now(),
+        status: "NotStarted",
+        currentPlayerIndex: 0,
+        turnCount: 0,
+        playDirection: "clockwise",
+        lastActionTimestamp: Date.now(),
+      });
+      game = await ctx.db.get(gameId);
+    }
+
+    if (!game) return null;
+
+    // Upsert player
+    await ctx.db
+      .query("players")
+      .withIndex("by_wallet", (q) => q.eq("walletAddress", args.walletAddress))
+      .first()
+      .then(async (existing) => {
+        if (existing) {
+          await ctx.db.patch(existing._id, {
+            currentGameId: game!._id,
+            displayName: args.displayName || existing.displayName,
+            connected: true,
+            lastSeen: Date.now(),
+          });
+        } else {
+          await ctx.db.insert("players", {
+            walletAddress: args.walletAddress,
+            displayName: args.displayName,
+            currentGameId: game!._id,
+            connected: true,
+            lastSeen: Date.now(),
+          });
+        }
+      });
+
+    // Add player to game if not already in it
+    if (!game.players.includes(args.walletAddress)) {
+      await ctx.db.patch(game._id, {
+        players: [...game.players, args.walletAddress],
+      });
+    }
+
+    return {
+      gameId: game._id,
+      playerNumber: game.players.length,
+    };
+  },
+});
+
+// Get all players in a room (replaces socket.on("roomData"))
+export const inRoom = query({
+  args: { roomId: v.string() },
+  handler: async (ctx, args) => {
+    const game = await ctx.db
+      .query("games")
+      .withIndex("by_roomId", (q) => q.eq("roomId", args.roomId))
+      .first();
+
+    if (!game) return [];
+
+    const players = await ctx.db
+      .query("players")
+      .withIndex("by_currentGame", (q) => q.eq("currentGameId", game._id))
+      .collect();
+
+    return players.map((p, index) => ({
+      id: p._id,
+      name: `Player ${index + 1}`,
+      walletAddress: p.walletAddress,
+      displayName: p.displayName,
+      connected: p.connected,
+      room: args.roomId,
+    }));
+  },
+});

@@ -1186,3 +1186,45 @@
 {"level":"info","message":"User HDpCLDYhLkDYobKOAAB1 did not reconnect, removing from room 110","service":"gameofuno-backend","timestamp":"2025-11-23 12:03:57"}
 {"level":"info","message":"User z86E9Ie0-HmRULXCAABl disconnected: transport close. Active connections: 0","service":"gameofuno-backend","timestamp":"2025-11-23 21:14:36"}
 {"level":"info","message":"Saving game states before shutdown...","service":"gameofuno-backend","timestamp":"2025-11-23 21:14:37"}
+{"level":"info","message":"Server started on Port 4000 at 2025-11-30T11:05:04.839Z","service":"gameofuno-backend","timestamp":"2025-11-30 11:05:04"}
+{"level":"info","message":"Convex URL: http://127.0.0.1:3210","service":"gameofuno-backend","timestamp":"2025-11-30 11:05:04"}
+{"level":"info","message":"Shutting down gracefully...","service":"gameofuno-backend","timestamp":"2025-11-30 12:38:09"}
+{"level":"info","message":"Server started on Port 4000 at 2025-11-30T12:38:12.693Z","service":"gameofuno-backend","timestamp":"2025-11-30 12:38:12"}
+{"level":"info","message":"Convex URL: http://127.0.0.1:3210","service":"gameofuno-backend","timestamp":"2025-11-30 12:38:12"}
+{"address":"::","code":"EADDRINUSE","errno":-98,"level":"error","message":"Uncaught Exception: listen EADDRINUSE: address already in use :::4000","port":4000,"service":"gameofuno-backend","stack":"Error: listen EADDRINUSE: address already in use :::4000\n    at Server.setupListenHandle [as _listen2] (node:net:1940:16)\n    at listenInCluster (node:net:1997:12)\n    at Server.listen (node:net:2102:7)\n    at Object.<anonymous> (/home/visha/uno-game/backend/index.ts:195:8)\n    at Module._compile (node:internal/modules/cjs/loader:1706:14)\n    at Module.m._compile (/home/visha/uno-game/backend/node_modules/ts-node/src/index.ts:1618:23)\n    at node:internal/modules/cjs/loader:1839:10\n    at Object.require.extensions.<computed> [as .ts] (/home/visha/uno-game/backend/node_modules/ts-node/src/index.ts:1621:12)\n    at Module.load (node:internal/modules/cjs/loader:1441:32)\n    at Function._load (node:internal/modules/cjs/loader:1263:12)","syscall":"listen","timestamp":"2025-11-30 12:44:54"}
+{"level":"info","message":"Shutting down gracefully...","service":"gameofuno-backend","timestamp":"2025-11-30 12:45:09"}
+{"level":"info","message":"Server started on Port 4000 at 2025-11-30T12:45:21.113Z","service":"gameofuno-backend","timestamp":"2025-11-30 12:45:21"}
+{"level":"info","message":"Convex URL: http://127.0.0.1:3210","service":"gameofuno-backend","timestamp":"2025-11-30 12:45:21"}
+{"level":"info","message":"Shutting down gracefully...","service":"gameofuno-backend","timestamp":"2025-11-30 12:46:55"}
+{"level":"info","message":"Server started on Port 4000 at 2025-11-30T12:47:00.489Z","service":"gameofuno-backend","timestamp":"2025-11-30 12:47:00"}
+{"level":"info","message":"Convex URL: http://127.0.0.1:3210","service":"gameofuno-backend","timestamp":"2025-11-30 12:47:00"}
+{"level":"info","message":"User hR3_CzO6AxPbmG1wAAAB connected. Active connections: 1","service":"gameofuno-backend","timestamp":"2025-11-30 12:56:03"}
+{"level":"info","message":"User CBBA8ltBoGOVFoOSAAAD connected. Active connections: 2","service":"gameofuno-backend","timestamp":"2025-11-30 12:56:03"}
+{"level":"info","message":"User 4VBCuCO_7yEf7p1hAAAF connected. Active connections: 3","service":"gameofuno-backend","timestamp":"2025-11-30 12:56:43"}
+{"level":"info","message":"Shutting down gracefully...","service":"gameofuno-backend","timestamp":"2025-11-30 12:57:41"}
+{"level":"error","message":"Forced shutdown after timeout","service":"gameofuno-backend","timestamp":"2025-11-30 12:57:51"}
+{"level":"info","message":"Server started on Port 4000 at 2025-11-30T13:00:24.770Z","service":"gameofuno-backend","timestamp":"2025-11-30 13:00:24"}
+{"level":"info","message":"Convex URL: http://127.0.0.1:3210","service":"gameofuno-backend","timestamp":"2025-11-30 13:00:24"}
+{"level":"info","message":"User 9a93h2yBXqpNkJbSAAAB connected. Active connections: 1","service":"gameofuno-backend","timestamp":"2025-11-30 13:00:27"}
+{"level":"info","message":"User 9a93h2yBXqpNkJbSAAAB disconnected: transport close. Active connections: 0","service":"gameofuno-backend","timestamp":"2025-11-30 13:01:12"}
+{"level":"info","message":"User loWbRcOXoP-5cPb3AAAD connected. Active connections: 1","service":"gameofuno-backend","timestamp":"2025-11-30 13:01:21"}
+{"level":"info","message":"User lwKsRApfR_7UMfLtAAAF connected. Active connections: 2","service":"gameofuno-backend","timestamp":"2025-11-30 13:01:21"}
+{"level":"info","message":"User ySNz8QX97j1lWLSdAAAH connected. Active connections: 3","service":"gameofuno-backend","timestamp":"2025-11-30 13:01:22"}
+{"level":"info","message":"User loWbRcOXoP-5cPb3AAAD disconnected: transport close. Active connections: 2","service":"gameofuno-backend","timestamp":"2025-11-30 13:04:25"}
+{"level":"info","message":"User ySNz8QX97j1lWLSdAAAH disconnected: transport close. Active connections: 1","service":"gameofuno-backend","timestamp":"2025-11-30 13:04:25"}
+{"level":"info","message":"User lwKsRApfR_7UMfLtAAAF disconnected: transport close. Active connections: 0","service":"gameofuno-backend","timestamp":"2025-11-30 13:04:25"}
+{"level":"info","message":"User rfLB156oEIuj0LX-AAAJ connected. Active connections: 1","service":"gameofuno-backend","timestamp":"2025-11-30 13:04:44"}
+{"level":"info","message":"User FwPXGsx4NEffAnHYAAAL connected. Active connections: 2","service":"gameofuno-backend","timestamp":"2025-11-30 13:04:44"}
+{"level":"info","message":"User 0_8AiPeTal4lTiAiAAAN connected. Active connections: 3","service":"gameofuno-backend","timestamp":"2025-11-30 13:04:45"}
+{"level":"info","message":"User 0_8AiPeTal4lTiAiAAAN joined room game-204","service":"gameofuno-backend","timestamp":"2025-11-30 13:05:46"}
+{"level":"info","message":"User 0_8AiPeTal4lTiAiAAAN requesting game state sync for room game-204, game 204","service":"gameofuno-backend","timestamp":"2025-11-30 13:05:46"}
+{"level":"info","message":"User 0_8AiPeTal4lTiAiAAAN joined room game-204","service":"gameofuno-backend","timestamp":"2025-11-30 13:05:46"}
+{"level":"info","message":"User 0_8AiPeTal4lTiAiAAAN requesting game state sync for room game-204, game 204","service":"gameofuno-backend","timestamp":"2025-11-30 13:05:46"}
+{"level":"error","message":"Error syncing game state for room game-204: [Request ID: c52d4a3e5d89285b] Server Error\nArgumentValidationError: Value does not match validator.\nPath: .numericId\nValue: \"204\"\nValidator: v.float64()\n\n","service":"gameofuno-backend","stack":"Error: [Request ID: c52d4a3e5d89285b] Server Error\nArgumentValidationError: Value does not match validator.\nPath: .numericId\nValue: \"204\"\nValidator: v.float64()\n\n\n    at ConvexHttpClient.queryInner (/home/visha/uno-game/backend/node_modules/convex/src/browser/http_client.ts:332:15)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async ConvexHttpClient.query (/home/visha/uno-game/backend/node_modules/convex/src/browser/http_client.ts:271:12)\n    at async Socket.<anonymous> (/home/visha/uno-game/backend/handlers/reconnectionHandlers.ts:145:18)","timestamp":"2025-11-30 13:05:46"}
+{"level":"error","message":"Error syncing game state for room game-204: [Request ID: beaa3f79ccf6f119] Server Error\nArgumentValidationError: Value does not match validator.\nPath: .numericId\nValue: \"204\"\nValidator: v.float64()\n\n","service":"gameofuno-backend","stack":"Error: [Request ID: beaa3f79ccf6f119] Server Error\nArgumentValidationError: Value does not match validator.\nPath: .numericId\nValue: \"204\"\nValidator: v.float64()\n\n\n    at ConvexHttpClient.queryInner (/home/visha/uno-game/backend/node_modules/convex/src/browser/http_client.ts:332:15)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async ConvexHttpClient.query (/home/visha/uno-game/backend/node_modules/convex/src/browser/http_client.ts:271:12)\n    at async Socket.<anonymous> (/home/visha/uno-game/backend/handlers/reconnectionHandlers.ts:145:18)","timestamp":"2025-11-30 13:05:46"}
+{"level":"info","message":"New user 0_8AiPeTal4lTiAiAAAN joined as Player 0 in room 204","service":"gameofuno-backend","timestamp":"2025-11-30 13:05:46"}
+{"level":"info","message":"New user 0_8AiPeTal4lTiAiAAAN joined as Player 0 in room 204","service":"gameofuno-backend","timestamp":"2025-11-30 13:05:46"}
+{"level":"info","message":"Shutting down gracefully...","service":"gameofuno-backend","timestamp":"2025-11-30 13:16:32"}
+{"level":"error","message":"Forced shutdown after timeout","service":"gameofuno-backend","timestamp":"2025-11-30 13:16:42"}
+{"level":"info","message":"Server started on Port 4000 at 2025-11-30T13:42:18.455Z","service":"gameofuno-backend","timestamp":"2025-11-30 13:42:18"}
+{"level":"info","message":"Convex URL: http://127.0.0.1:3210","service":"gameofuno-backend","timestamp":"2025-11-30 13:42:18"}

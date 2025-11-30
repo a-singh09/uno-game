@@ -1,19 +1,18 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import http from "http";
-import { Server as SocketIOServer, Socket } from "socket.io";
-import ws from "ws";
+import * as dotenv from "dotenv";
 import path from "path";
 import { ConvexHttpClient } from "convex/browser";
 // @ts-ignore
 import { api } from "./convex/_generated/api";
 import logger from "./logger";
 import { getGameState } from "./controllers/getGameState";
-import { registerSocketHandlers } from "./handlers";
 
 const app = express();
 const server = http.createServer(app);
 
+dotenv.config({path: ".env.local" })
 // Initialize Convex client
 const convexUrl = process.env.CONVEX_URL;
 if (!convexUrl) {
@@ -21,29 +20,11 @@ if (!convexUrl) {
 }
 const convex = new ConvexHttpClient(convexUrl);
 
-// Socket.IO server setup
-const io = new SocketIOServer(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
-  wsEngine: ws.Server,
-  pingTimeout: 30000,
-  pingInterval: 10000,
-  connectTimeout: 20000,
-  maxHttpBufferSize: 1e6,
-  transports: ["websocket", "polling"],
-  allowEIO3: true,
-});
-
 const PORT = process.env.PORT || 4000;
 server.timeout = 120000;
 
 app.use(cors());
 app.use(express.json());
-
-// Track active connections (using object to pass by reference)
-const activeConnections = { count: 0 };
 
 // ============================================
 // API ENDPOINTS
@@ -57,10 +38,10 @@ app.get("/health", async (req: Request, res: Response) => {
 
     res.status(200).json({
       status: "ok",
-      connections: activeConnections.count,
       uptime: process.uptime(),
       totalGames: games.length,
       activeGames: activeGames.length,
+      message: "Backend running - using Convex for realtime",
     });
   } catch (error) {
     logger.error("Health check failed:", error);
@@ -143,21 +124,6 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(path.resolve(__dirname, "build", "index.html"));
   });
 }
-
-// ============================================
-// SOCKET.IO CONNECTION HANDLER
-// ============================================
-
-io.on("connection", (socket: Socket) => {
-  activeConnections.count++;
-  logger.info(
-    `User ${socket.id} connected. Active connections: ${activeConnections.count}`
-  );
-  socket.emit("server_id", socket.id);
-
-  // Register all socket event handlers
-  registerSocketHandlers(socket, io, convex, activeConnections);
-});
 
 // ============================================
 // SERVER LIFECYCLE
