@@ -10,9 +10,9 @@ import { useWalletClient } from "wagmi";
 import { useSendTransaction } from "thirdweb/react";
 import { prepareContractCall } from "thirdweb";
 
-// Socket and context
-import socket from "../../services/socket";
-import { useSocketConnection } from "@/context/SocketConnectionContext";
+// Convex realtime hooks
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { useSoundProvider } from "../../context/SoundProvider";
 
 // Components
@@ -114,7 +114,7 @@ const Game: React.FC<GameProps> = ({
   restoredGameState = null,
 }) => {
   // Use restored game state if available (for reconnection), otherwise use initial state
-  const [gameState, dispatch] = useReducer(
+  const [localGameState, dispatch] = useReducer(
     gameReducer,
     (restoredGameState as GameState) || INITIAL_GAME_STATE
   );
@@ -127,14 +127,20 @@ const Game: React.FC<GameProps> = ({
   const [computerMoveCounter, setComputerMoveCounter] = useState(0);
   const [showLowBalanceDrawer, setShowLowBalanceDrawer] = useState(false);
 
-  // Refs
-  const pendingActionsRef = useRef<{ eventName: string; data: any }[]>([]);
-
   // Hooks
   const { checkBalance } = useBalanceCheck();
-  const { isConnected: socketConnected, isReconnecting } =
-    useSocketConnection();
   const { address, isConnected } = useWalletAddress();
+  
+  // Convex hooks for realtime multiplayer game state
+  const convexGameState = useQuery(api.games.getGameState, 
+    isComputerMode ? "skip" : { roomId: room }
+  );
+  const updateGameMutation = useMutation(api.gameActions.updateGame);
+  const initGameMutation = useMutation(api.gameActions.initializeGame);
+  
+  // Use local state for computer mode, Convex state for multiplayer
+  const gameState = isComputerMode ? localGameState : (convexGameState || localGameState);
+  
   const { data: walletClient } = useWalletClient();
   const { mutate: sendTransaction } = useSendTransaction();
   const { toast } = useToast();
@@ -201,71 +207,18 @@ const Game: React.FC<GameProps> = ({
   );
 
   /**
-   * Socket event emitter with buffering support
+   * Convex handles reconnection automatically!
+   * No need for manual buffering or reconnection logic.
+   * All mutations are queued when offline and replayed when back online.
    */
-  const emitSocketEvent = useCallback(
-    (eventName: string, data: any) => {
-      if (socketConnected) {
-        socket.emit(eventName, data);
-      } else {
-        console.log(`Socket disconnected, buffering event: ${eventName}`);
-        pendingActionsRef.current.push({ eventName, data });
-
-        toast({
-          title: "Connection issue",
-          description: "Your action will be sent when connection is restored",
-          duration: TOAST_DURATION.SHORT,
-          variant: "warning",
-        });
-      }
-    },
-    [socketConnected, toast]
-  );
 
   /**
-   * Process pending actions when reconnected
-   */
-  useEffect(() => {
-    if (socketConnected && pendingActionsRef.current.length > 0) {
-      console.log(
-        `Processing ${pendingActionsRef.current.length} pending actions`
-      );
-
-      pendingActionsRef.current.forEach(({ eventName, data }) => {
-        socket.emit(eventName, data);
-      });
-
-      pendingActionsRef.current = [];
-
-      toast({
-        title: "Connection restored",
-        description: "All pending actions have been sent",
-        duration: TOAST_DURATION.SHORT,
-        variant: "success",
-      });
-    }
-  }, [socketConnected, toast]);
-
-  /**
-   * Show warning when connection is lost during game
-   */
-  useEffect(() => {
-    if (!socketConnected && !isReconnecting && gameState.turn) {
-      toast({
-        title: "Connection lost",
-        description: "Attempting to reconnect...",
-        duration: TOAST_DURATION.LONG,
-        variant: "destructive",
-      });
-    }
-  }, [socketConnected, isReconnecting, gameState.turn, toast]);
-
-  /**
-   * Update game state (local or via socket)
+   * Update game state (local for computer mode, Convex for multiplayer)
    */
   const updateGameState = useCallback(
-    (newState: Partial<GameState>) => {
+    async (newState: Partial<GameState>) => {
       if (isComputerMode) {
+        // Computer mode: update local state only
         dispatch(newState);
 
         // Play appropriate sound
@@ -280,7 +233,40 @@ const Game: React.FC<GameProps> = ({
           playGameOverSound();
         }
       } else {
-        emitSocketEvent("updateGameState", newState);
+        // Multiplayer mode: use Convex mutation
+        try {
+          // Extract player decks from newState
+          const playerDecks: any = {};
+          for (let i = 1; i <= 6; i++) {
+            const deckKey = `player${i}Deck`;
+            if (newState[deckKey]) {
+              playerDecks[deckKey] = newState[deckKey];
+              delete newState[deckKey];
+            }
+          }
+
+          // Also extract playedCardsPile and drawCardPile (we'll store these separately if needed)
+          const playedCardsPile = newState.playedCardsPile;
+          const drawCardPile = newState.drawCardPile;
+          delete newState.playedCardsPile;
+          delete newState.drawCardPile;
+
+          await updateGameMutation({
+            roomId: room,
+            updates: newState,
+            playerDecks: Object.keys(playerDecks).length > 0 ? playerDecks : undefined,
+            playedCardsPile,
+            drawCardPile,
+          });
+        } catch (error) {
+          console.error("Failed to update game state:", error);
+          toast({
+            title: "Update failed",
+            description: "Failed to update game state. Please try again.",
+            duration: TOAST_DURATION.SHORT,
+            variant: "destructive",
+          });
+        }
       }
     },
     [
@@ -288,7 +274,9 @@ const Game: React.FC<GameProps> = ({
       playSoundMap,
       playCardPlayedSound,
       playGameOverSound,
-      emitSocketEvent,
+      updateGameMutation,
+      room,
+      toast,
     ]
   );
 
@@ -383,22 +371,19 @@ const Game: React.FC<GameProps> = ({
       isExtraTurn: false,
     };
 
-    if (isComputerMode) {
-      dispatch(updateState);
+    // Update game state (local for computer, Convex for multiplayer)
+    updateGameState(updateState);
 
-      // For computer mode, if computer draws a playable card, trigger another move
-      if (playable && turn === "Player 2") {
-        console.log(
-          "Computer drew playable card:",
-          drawCard,
-          "Will play on next turn cycle"
-        );
-        setTimeout(() => {
-          setComputerMoveCounter((prev) => prev + 1);
-        }, GAME_CONFIG.COMPUTER_DRAW_DELAY);
-      }
-    } else {
-      emitSocketEvent("updateGameState", updateState);
+    // For computer mode, if computer draws a playable card, trigger another move
+    if (isComputerMode && playable && turn === "Player 2") {
+      console.log(
+        "Computer drew playable card:",
+        drawCard,
+        "Will play on next turn cycle"
+      );
+      setTimeout(() => {
+        setComputerMoveCounter((prev) => prev + 1);
+      }, GAME_CONFIG.COMPUTER_DRAW_DELAY);
     }
   }, [
     drawCardPile,
@@ -411,7 +396,6 @@ const Game: React.FC<GameProps> = ({
     gameState,
     isComputerMode,
     updateGameState,
-    emitSocketEvent,
     playShufflingSound,
     toast,
   ]);
@@ -795,53 +779,67 @@ const Game: React.FC<GameProps> = ({
       console.log(
         `Player 1 initializing multiplayer game with ${playerCount} players...`
       );
-      const initialState = initializeMultiplayerGame(
-        playerCount
-      ) as Partial<GameState>;
-      emitSocketEvent("initGameState", initialState);
+      const initialState = initializeMultiplayerGame(playerCount) as any;
+      
+      // Initialize game in Convex (replaces socket.emit("initGameState"))
+      initGameMutation({
+        roomId: room,
+        gameState: {
+          turn: initialState.turn,
+          currentColor: initialState.currentColor,
+          currentNumber: initialState.currentNumber,
+          playDirection: initialState.playDirection || "clockwise",
+          totalPlayers: initialState.totalPlayers || playerCount,
+          player1Deck: initialState.player1Deck || [],
+          player2Deck: initialState.player2Deck || [],
+          player3Deck: initialState.player3Deck || [],
+          player4Deck: initialState.player4Deck || [],
+          player5Deck: initialState.player5Deck || [],
+          player6Deck: initialState.player6Deck || [],
+          playedCardsPile: initialState.playedCardsPile || [],
+          drawCardPile: initialState.drawCardPile || [],
+        },
+        players: [], // TODO: Add actual player addresses
+      }).catch((error) => {
+        console.error("Failed to initialize game:", error);
+        toast({
+          title: "Initialization failed",
+          description: "Failed to start the game. Please try again.",
+          variant: "destructive",
+        });
+      });
     }
-  }, [isComputerMode, currentUser, playerCount, emitSocketEvent]);
+  }, [isComputerMode, currentUser, playerCount, initGameMutation, room, toast]);
 
   /**
-   * Socket event listeners
+   * Subscribe to Convex game state changes (multiplayer only)
+   * Convex automatically handles:
+   * - Real-time updates when other players make moves
+   * - Reconnection and state sync
+   * - Optimistic updates
    */
   useEffect(() => {
-    const handleInitGameState = (gameState: Partial<GameState>) => {
-      // Dispatch all game state properties dynamically
-      dispatch(gameState);
-      playShufflingSound();
-    };
+    if (isComputerMode || !convexGameState) return;
 
-    const handleUpdateGameState = (gameState: Partial<GameState>) => {
-      const { gameOver, winner, currentNumber } = gameState;
+    // Play sounds based on game state changes
+    if (convexGameState.gameOver) {
+      playGameOverSound();
+    }
 
-      if (gameOver) playGameOverSound();
+    if (convexGameState.currentNumber) {
+      playSoundMap(convexGameState.currentNumber);
+    }
 
-      //check for special card and play their sound else play regular sound
-      if (currentNumber) {
-        playSoundMap(currentNumber);
-      }
-
-      // Dispatch all game state updates
-      dispatch({
-        ...gameState,
-        isUnoButtonPressed: false,
-        drawButtonPressed: gameState.drawButtonPressed || false,
-      });
-    };
-
-    socket.on("initGameState", handleInitGameState);
-    socket.on("updateGameState", handleUpdateGameState);
-
-    // CRITICAL: Cleanup event listeners on unmount or reconnection
-    return () => {
-      socket.off("initGameState", handleInitGameState);
-      socket.off("updateGameState", handleUpdateGameState);
-    };
+    // Update local state for UI rendering
+    dispatch({
+      ...convexGameState,
+      isUnoButtonPressed: false,
+      drawButtonPressed: convexGameState.drawButtonPressed || false,
+    });
   }, [
-    playShufflingSound,
+    convexGameState,
+    isComputerMode,
     playGameOverSound,
-    playCardPlayedSound,
     playSoundMap,
   ]);
 

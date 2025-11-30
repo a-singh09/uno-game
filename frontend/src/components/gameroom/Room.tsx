@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import Game from "./Game";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import socket, { socketManager } from "@/services/socket";
 import CenterInfo from "./CenterInfo";
-import { ConnectionStatusIndicator } from "@/components/ConnectionStatusIndicator";
-import { useSocketConnection } from "@/context/SocketConnectionContext";
+
+// Convex realtime hooks
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import {
   UnoGameContract,
   OffChainGameState,
@@ -92,11 +93,19 @@ const Room = () => {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const isComputerMode = searchParams.get("mode") === "computer";
-  const { isConnected, isReconnecting } = useSocketConnection();
   const router = useRouter();
 
-  //initialize socket state
+  //initialize room state
   const [room] = useState(id);
+  
+  // Convex hooks for realtime multiplayer
+  const players = useQuery(api.players.inRoom, 
+    isComputerMode ? "skip" : { roomId: room as string }
+  );
+  const convexGameState = useQuery(api.games.getGameState,
+    isComputerMode ? "skip" : { roomId: room as string }
+  );
+  const joinGameMutation = useMutation(api.players.joinGame);
   const [roomFull, setRoomFull] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User["name"]>("");
@@ -183,7 +192,7 @@ const Room = () => {
       });
 
       // Initialize the game state after the transaction is confirmed
-      const newState = startGame(offChainGameState, socket);
+      const newState = startGame(offChainGameState);
       console.log("New Computer Game State:", newState);
 
       const startingPlayer = newState.players[newState.currentPlayerIndex];
@@ -211,20 +220,6 @@ const Room = () => {
     }
   };
 
-  // CRITICAL: Set room info with address BEFORE connection attempts
-  // This ensures address is persisted even if socket isn't connected yet
-  useEffect(() => {
-    if (!isComputerMode && room && id) {
-      // Always persist room info, even if address isn't available yet
-      console.log("Persisting room info with address:", address);
-      socketManager.setRoomInfo(
-        room as string,
-        id as string,
-        address || undefined
-      );
-    }
-  }, [address, room, id, isComputerMode]);
-
   useEffect(() => {
     if (isComputerMode) {
       // For computer mode, simulate having 2 players immediately
@@ -239,49 +234,55 @@ const Room = () => {
         "Computer mode detected, will initialize after contract setup"
       );
     } else {
-      // Only join if we haven't already and socket is connected
-      if (isConnected && !hasJoinedRoom.current) {
-        console.log(
-          "Joining room with wallet address:",
-          address || "not yet available"
-        );
-        // Set flag BEFORE emitting to prevent race conditions with reconnection handler
+      // Join game using Convex mutation (automatic reconnection!)
+      if (address && !hasJoinedRoom.current) {
+        console.log("Joining room with wallet address:", address);
         hasJoinedRoom.current = true;
 
-        socket.emit(
-          "join",
-          { room: room, address: address || null },
-          (error: any) => {
-            if (error) {
-              setRoomFull(true);
-              // Reset flag on error so user can try again
-              hasJoinedRoom.current = false;
-            } else {
-              // Update room info with address once we have it
-              if (address) {
-                socketManager.setRoomInfo(
-                  room as string,
-                  id as string,
-                  address
-                );
-              }
-            }
+        joinGameMutation({
+          roomId: room as string,
+          walletAddress: address,
+          displayName: `Player`,
+        }).then((result) => {
+          if (result) {
+            console.log("Successfully joined game:", result);
           }
-        );
+        }).catch((error) => {
+          console.error("Failed to join game:", error);
+          setRoomFull(true);
+          hasJoinedRoom.current = false;
+        });
       }
     }
 
     return function cleanup() {
-      if (!isComputerMode) {
-        socket.emit("quitRoom");
-        socketManager.clearRoomInfo();
-        hasJoinedRoom.current = false;
-        // DON'T call socket.off() here - it removes ALL listeners including
-        // roomData and currentUserData which are needed for reconnection
-        // Individual listeners are cleaned up in their respective useEffects
-      }
+      // Convex handles cleanup automatically
+      hasJoinedRoom.current = false;
     };
-  }, [room, isComputerMode, isConnected, address]);
+  }, [room, isComputerMode, address, joinGameMutation]);
+
+  /**
+   * Sync players from Convex realtime subscription
+   * Replaces socket.on("roomData")
+   */
+  useEffect(() => {
+    if (isComputerMode || !players) return;
+
+    // Convert Convex players to UI format
+    const uiPlayers = players.map((p: any) => ({
+      id: p._id,
+      name: p.displayName,
+      room: room as string,
+    }));
+
+    setUsers(uiPlayers);
+
+    // Set current user based on wallet address
+    const currentPlayer = players.find((p: any) => p.walletAddress === address);
+    if (currentPlayer && currentPlayer.displayName) {
+      setCurrentUser(currentPlayer.displayName);
+    }
+  }, [players, isComputerMode, address, room]);
 
   useEffect(() => {
     const setup = async () => {
@@ -381,291 +382,18 @@ const Room = () => {
     initializeComputerGame,
   ]);
 
-  useEffect(() => {
-    if (!socket || !id) return;
+  /**
+   * Convex handles all reconnection automatically!
+   * No need for manual socket event listeners for:
+   * - gameStarted events
+   * - cardPlayed events  
+   * - gameStateSync events
+   * - reconnection logic
+   * 
+   * All of this is replaced by Convex's realtime subscriptions.
+   * Just subscribe to the data you need and Convex handles the rest!
+   */
 
-    const roomId = `game-${id}`;
-    let hasJoinedGameRoom = false;
-    let reconnectHandled = false;
-
-    console.log(`Setting up room listeners for: ${roomId}`);
-
-    // Handle reconnection - rejoin room when connection is restored
-    // CONSOLIDATED: Only one handler to prevent race conditions
-    const handleReconnect = () => {
-      // Prevent duplicate reconnection attempts from multiple events
-      if (reconnectHandled) {
-        console.log("Reconnection already handled, skipping duplicate");
-        return;
-      }
-      reconnectHandled = true;
-
-      console.log("Reconnected, rejoining room:", roomId);
-
-      // Join game room if not already joined
-      if (!hasJoinedGameRoom) {
-        socket.emit("joinRoom", roomId);
-        hasJoinedGameRoom = true;
-      }
-
-      // Re-join the lobby room to get player list (if game hasn't started)
-      // CRITICAL: Only join if we haven't already joined to prevent duplicate joins
-      if (!gameStarted && !isComputerMode && !hasJoinedRoom.current) {
-        console.log("Re-joining lobby room:", room, "with address:", address);
-        // Set flag BEFORE emitting to prevent race conditions
-        hasJoinedRoom.current = true;
-
-        socket.emit(
-          "join",
-          { room: room, address: address || null },
-          (error: any) => {
-            if (error) {
-              console.error("Error rejoining lobby:", error);
-              // Reset flag on error so user can try again
-              hasJoinedRoom.current = false;
-            } else {
-              console.log(
-                "Successfully rejoined lobby, should receive roomData"
-              );
-            }
-          }
-        );
-      } else if (hasJoinedRoom.current) {
-        console.log("Already joined lobby room, skipping duplicate join");
-      }
-
-      // Request game state sync if game was started
-      if (gameStarted) {
-        console.log("Requesting game state sync for started game");
-        socket.emit("requestGameStateSync", { roomId, gameId: id, playerAddress: address });
-      }
-
-      // Reset flag after a short delay to allow future reconnections
-      setTimeout(() => {
-        reconnectHandled = false;
-      }, 1000);
-    };
-
-    // Only join room if connected and haven't joined yet
-    if (isConnected && !hasJoinedGameRoom) {
-      console.log("Initial join to game room:", roomId);
-      socket.emit("joinRoom", roomId);
-      hasJoinedGameRoom = true;
-
-      // Request game state restoration on page load/refresh
-      console.log("Requesting game state restoration for game:", id);
-      socket.emit("requestGameStateSync", { roomId, gameId: id, playerAddress: address });
-    }
-
-    // NOTE: socketManager's 'reconnected' event is the primary reconnection signal
-    // 'connect' and 'roomRejoined' are backup for edge cases
-    socket.on("reconnected", handleReconnect);
-    socket.on("connect", handleReconnect);
-    socket.on("roomRejoined", handleReconnect);
-
-    // Set up game started event listener
-    socket.on(
-      `gameStarted-${roomId}`,
-      (data: { newState: OffChainGameState; cardHashMap: any }) => {
-        console.log(`Game started event received for room ${roomId}:`, data);
-
-        try {
-          const { newState, cardHashMap } = data;
-
-          console.log("Received newState:", newState);
-          console.log("Received cardHashMap:", cardHashMap);
-          console.log("Current account:", account);
-
-          if (!newState) {
-            console.error(
-              "Error: Received empty game state in gameStarted event"
-            );
-            return;
-          }
-
-          if (cardHashMap) {
-            console.log("Updating global card hash map");
-            updateGlobalCardHashMap(cardHashMap);
-          } else {
-            console.warn(
-              "Warning: No cardHashMap received in gameStarted event"
-            );
-          }
-
-          console.log("Setting game as started");
-          setGameStarted(true);
-
-          console.log("Updating off-chain game state");
-          setOffChainGameState(newState);
-
-          if (account) {
-            console.log("Updating player hand for account:", account);
-            console.log("Player hands in newState:", newState.playerHands);
-
-            const playerHandHashes = newState.playerHands[account];
-            console.log("Player hand hashes:", playerHandHashes);
-
-            if (playerHandHashes) {
-              setPlayerHand(playerHandHashes);
-              storePlayerHand(BigInt(id as string), account, playerHandHashes);
-              console.log("Player hand updated and stored");
-            } else {
-              console.error(
-                `Error: No hand found for player ${account} in the game state`
-              );
-            }
-          } else {
-            console.error("Error: No account available to update player hand");
-          }
-
-          if (newState.players && newState.currentPlayerIndex !== undefined) {
-            const startingPlayer =
-              newState.players[newState.currentPlayerIndex];
-            console.log("Setting player to start:", startingPlayer);
-            setPlayerToStart(startingPlayer);
-          } else {
-            console.error(
-              "Error: Cannot determine starting player from game state"
-            );
-          }
-        } catch (error) {
-          console.error("Error handling gameStarted event:", error);
-        }
-      }
-    );
-
-    // Listen for cardPlayed event
-    socket.on(
-      `cardPlayed-${roomId}`,
-      (data: { action: any; newState: OffChainGameState }) => {
-        const { action, newState } = data;
-
-        setOffChainGameState(newState);
-
-        if (account && newState.playerHands[account]) {
-          setPlayerHand(newState.playerHands[account]);
-        }
-      }
-    );
-
-    // Listen for game state sync response (after reconnection or page refresh)
-    socket.on(
-      `gameStateSync-${roomId}`,
-      (data: {
-        newState: OffChainGameState;
-        cardHashMap: any;
-        restored?: boolean;
-        error?: string;
-      }) => {
-        console.log("Received game state sync:", data);
-
-        if (data.error) {
-          console.log(
-            "No saved game state found - this is normal if game hasn't started yet"
-          );
-          // This is expected behavior if:
-          // 1. Page refresh before game started (still in lobby)
-          // 2. Game state expired (> 1 hour old)
-          // 3. Server restarted and lost in-memory state
-          return;
-        }
-
-        const { newState, cardHashMap, restored } = data;
-
-        if (newState) {
-          console.log("Restoring game state:", newState);
-          setOffChainGameState(newState);
-
-          if (cardHashMap) {
-            console.log("Restoring card hash map");
-            updateGlobalCardHashMap(cardHashMap);
-          }
-
-          // Check if game was already started
-          if (newState.isStarted) {
-            console.log("Game was already started, restoring game state");
-            setGameStarted(true);
-
-            // CRITICAL: Convert offChainGameState to Game.js format for restoration
-            // This allows the Game component to restore its state on page refresh
-            const gameStateForGameComponent = convertToGameComponentState(
-              newState,
-              account
-            );
-            setRestoredGameState(gameStateForGameComponent);
-            console.log(
-              "Set restored game state for Game component:",
-              gameStateForGameComponent
-            );
-
-            // Restore player hand if available
-            if (account) {
-              const playerHandHashes = newState.playerHands?.[account];
-              if (playerHandHashes) {
-                console.log("Restoring player hand:", playerHandHashes);
-                setPlayerHand(playerHandHashes);
-              }
-            }
-
-            // Set the current player
-            if (newState.players && newState.currentPlayerIndex !== undefined) {
-              const currentPlayer =
-                newState.players[newState.currentPlayerIndex];
-              console.log("Current player:", currentPlayer);
-              setPlayerToStart(currentPlayer);
-            }
-          }
-
-          if (restored) {
-            toast({
-              title: "Game restored",
-              description: "Your game state has been restored!",
-              duration: 3000,
-              variant: "success",
-            });
-          } else {
-            toast({
-              title: "Game state synchronized",
-              description: "You're back in the game!",
-              duration: 3000,
-              variant: "success",
-            });
-          }
-        }
-      }
-    );
-
-    // Cleanup
-    return () => {
-      socket.off("connect", handleReconnect);
-      socket.off("roomRejoined", handleReconnect);
-      socket.off("reconnected", handleReconnect);
-      socket.off(`gameStarted-${roomId}`);
-      socket.off(`cardPlayed-${roomId}`);
-      socket.off(`gameStateSync-${roomId}`);
-    };
-  }, [id, socket, isConnected, gameStarted]);
-
-  useEffect(() => {
-    const handleRoomData = ({ users }: { users: User[] }) => {
-      console.log("Received roomData event with users:", users);
-      setUsers(users);
-    };
-
-    const handleCurrentUserData = ({ name }: { name: User["name"] }) => {
-      console.log("Received currentUserData event with name:", name);
-      setCurrentUser(name);
-    };
-
-    socket.on("roomData", handleRoomData);
-    socket.on("currentUserData", handleCurrentUserData);
-
-    // Cleanup
-    return () => {
-      socket.off("roomData", handleRoomData);
-      socket.off("currentUserData", handleCurrentUserData);
-    };
-  }, []);
 
   const fetchGameState = async (
     contract: UnoGameContract,
@@ -831,7 +559,7 @@ const Room = () => {
 
     try {
       console.log("Initializing local game state...");
-      const newState = startGame(offChainGameState, socket);
+      const newState = startGame(offChainGameState);
       console.log("New State:", newState);
 
       const startingPlayer = newState.players[newState.currentPlayerIndex];
@@ -918,7 +646,6 @@ const Room = () => {
           <path d="M24 12H5M12 19l-7-7 7-7" />
         </svg>
       </button>
-      <ConnectionStatusIndicator />
       <Toaster />
       {isComputerMode ? (
         // Computer mode - skip waiting and go directly to game

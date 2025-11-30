@@ -2,7 +2,6 @@
 
 import { useRef, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import io, { Socket } from "socket.io-client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
@@ -23,10 +22,6 @@ import ProfileDropdown from "@/components/profileDropdown"
 import { useBalanceCheck } from "@/hooks/useBalanceCheck";
 import { LowBalanceDrawer } from "@/components/LowBalanceDrawer";
 
-const CONNECTION =
-  process.env.NEXT_PUBLIC_WEBSOCKET_URL ||
-  "https://zkuno-669372856670.us-central1.run.app";
-
 // DIAM wallet integration removed
 
 export default function PlayGame() {
@@ -45,8 +40,6 @@ export default function PlayGame() {
   const { data: walletClient } = useWalletClient();
   const { account: recoilAccount } = useUserAccount();
   const { mutate: sendTransaction } = useSendTransaction();
-
-  const socket = useRef<Socket | null>(null);
 
   const { toast } = useToast();
 
@@ -73,34 +66,6 @@ export default function PlayGame() {
 
     return () => clearInterval(interval);
   }, [refetchGames]);
-
-  useEffect(() => {
-    if (!socket.current) {
-      socket.current = io(CONNECTION, {
-        transports: ["websocket"],
-      }) as any; // Type assertion to fix the type mismatch
-
-      console.log("Socket connection established");
-    }
-  }, [socket]);
-
-  useEffect(() => {
-    if (socket.current) {
-      console.log("Socket connection established");
-      // Add listener for gameRoomCreated event
-      socket.current.on("gameRoomCreated", () => {
-        console.log("Game room created event received");
-        refetchGames();
-      });
-
-      // Cleanup function
-      return () => {
-        if (socket.current) {
-          socket.current.off("gameRoomCreated");
-        }
-      };
-    }
-  }, [socket, refetchGames]);
 
   const ISSERVER = typeof window === "undefined";
 
@@ -239,15 +204,6 @@ export default function PlayGame() {
             if (gameCreatedId) {
               const gameId = BigInt(gameCreatedId); // Convert hex to decimal
               setGameId(gameId);
-    
-              // Emit socket event to create computer game room
-              if (socket.current) {
-                socket.current.emit("createComputerGame", {
-                  gameId: gameId.toString(),
-                  playerAddress: address
-                });
-                console.log("Socket event emitted for computer game creation");
-              }
     
               // Navigate to game room with computer mode flag
               router.push(`/game/${gameId}?mode=computer`);
