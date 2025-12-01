@@ -40,6 +40,8 @@ export interface OffChainGameState {
   lastPlayedCardHash: string | null;
   stateHash: string;
   isStarted: boolean;
+  drawCardPile?: string[];
+  playedCardsPile?: string[];
 }
 
 export interface OnChainGameState {

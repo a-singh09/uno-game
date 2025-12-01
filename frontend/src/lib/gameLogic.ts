@@ -179,12 +179,14 @@ export function startGame(
   const firstCardHash = hashCard(firstCard);
   //tempCardHashMap.set(firstCardHash, firstCard);
   newState.discardPileHash = hashCards([firstCard]);
+  newState.playedCardsPile = [firstCardHash];
   newState.currentColor = firstCard.color;
   newState.currentValue = firstCard.value;
   newState.lastPlayedCardHash = firstCardHash;
 
   // Hash remaining deck
   newState.deckHash = hashCards(deck);
+  newState.drawCardPile = deck.map(hashCard);
 
   // Randomly choose first player
   newState.currentPlayerIndex = Math.floor(

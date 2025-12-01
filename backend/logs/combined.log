@@ -1228,3 +1228,5 @@
 {"level":"error","message":"Forced shutdown after timeout","service":"gameofuno-backend","timestamp":"2025-11-30 13:16:42"}
 {"level":"info","message":"Server started on Port 4000 at 2025-11-30T13:42:18.455Z","service":"gameofuno-backend","timestamp":"2025-11-30 13:42:18"}
 {"level":"info","message":"Convex URL: http://127.0.0.1:3210","service":"gameofuno-backend","timestamp":"2025-11-30 13:42:18"}
+{"level":"info","message":"Server started on Port 4000 at 2025-12-01T13:33:34.651Z","service":"gameofuno-backend","timestamp":"2025-12-01 19:03:34"}
+{"level":"info","message":"Convex URL: https://quixotic-raccoon-840.convex.cloud","service":"gameofuno-backend","timestamp":"2025-12-01 19:03:34"}

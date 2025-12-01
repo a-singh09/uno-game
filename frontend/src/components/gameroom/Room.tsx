@@ -106,6 +106,7 @@ const Room = () => {
     isComputerMode ? "skip" : { roomId: room as string }
   );
   const joinGameMutation = useMutation(api.players.joinGame);
+  const initGameMutation = useMutation(api.gameActions.initializeGame);
   const [roomFull, setRoomFull] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User["name"]>("");
@@ -559,6 +560,40 @@ const Room = () => {
       const optimisticUpdate = applyActionToOffChainState(newState, action);
       setOffChainGameState(optimisticUpdate);
       console.log("Updated off-chain state:", optimisticUpdate);
+
+      // Initialize game in Convex for realtime multiplayer
+      if (room && newState) {
+        const playerDecks: any = {};
+        // Map player addresses to playerXDeck format
+        newState.players.forEach((playerAddr, index) => {
+             playerDecks[`player${index + 1}Deck`] = newState.playerHands[playerAddr] || [];
+        });
+
+        // Ensure optional decks are undefined/empty for typescript/convex
+        // We can pass them as is, the spread will handle it if the object keys match the schema args
+
+        initGameMutation({
+            roomId: room as string,
+            gameState: {
+                turn: newState.players[newState.currentPlayerIndex],
+                currentColor: newState.currentColor || "red",
+                currentNumber: newState.currentValue || "0", 
+                playDirection: newState.direction === "clockwise" ? "clockwise" : "counterclockwise",
+                totalPlayers: newState.players.length,
+                player1Deck: playerDecks.player1Deck || [],
+                player2Deck: playerDecks.player2Deck || [],
+                player3Deck: playerDecks.player3Deck,
+                player4Deck: playerDecks.player4Deck,
+                player5Deck: playerDecks.player5Deck,
+                player6Deck: playerDecks.player6Deck,
+                playedCardsPile: newState.playedCardsPile || [],
+                drawCardPile: newState.drawCardPile || [],
+            },
+            players: newState.players
+        })
+        .then((result) => console.log("Game initialized in Convex:", result))
+        .catch((err) => console.error("Failed to initialize game in Convex:", err));
+      }
     } catch (error) {
       console.error("Error starting game:", error);
       setError("Failed to start game. Please try again.");
