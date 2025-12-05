@@ -123,8 +123,8 @@ function registerGameHandlers(socket, io) {
    * Initialize Game State Handler
    * Handles game state initialization from client
    */
-  socket.on('initGameState', (gameState) => {
-    const user = getUser(socket.id);
+  socket.on('initGameState', async (gameState) => {
+    const user = await getUser(socket.id);
     if (user) {
       // Save game state for reconnection support
       gameStateManager.saveGameState(user.room, gameState);
@@ -139,9 +139,9 @@ function registerGameHandlers(socket, io) {
    * Update Game State Handler
    * Handles game state updates during gameplay
    */
-  socket.on('updateGameState', (gameState) => {
+  socket.on('updateGameState', async (gameState) => {
     try {
-      const user = getUser(socket.id);
+      const user = await getUser(socket.id);
       if (user) {
         // Save updated game state for reconnection support
         gameStateManager.saveGameState(user.room, gameState);
@@ -163,10 +163,10 @@ function registerGameHandlers(socket, io) {
    * Request Game Init Handler
    * Handles game initialization request (server-side game setup)
    */
-  socket.on('requestGameInit', (payload) => {
-    const user = getUser(socket.id);
+  socket.on('requestGameInit', async (payload) => {
+    const user = await getUser(socket.id);
     if (user) {
-      const roomUsers = getUsersInRoom(user.room);
+      const roomUsers = await getUsersInRoom(user.room);
       const numPlayers = roomUsers.length;
       
       logger.info(`Initializing game in room ${user.room} with ${numPlayers} players`);

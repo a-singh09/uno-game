@@ -7,8 +7,8 @@ const { cleanupDisconnectedUsers } = require('../users');
  * @param {number} maxDisconnectTime - Max disconnect time before removal in ms (default: 60000)
  */
 function startPeriodicCleanup(interval = 30000, maxDisconnectTime = 60000) {
-  setInterval(() => {
-    const removed = cleanupDisconnectedUsers(maxDisconnectTime);
+  setInterval(async () => {
+    const removed = await cleanupDisconnectedUsers(maxDisconnectTime);
     if (removed.length > 0) {
       logger.info(`Periodic cleanup removed ${removed.length} disconnected users`);
     }
@@ -20,10 +20,21 @@ function startPeriodicCleanup(interval = 30000, maxDisconnectTime = 60000) {
 /**
  * Graceful shutdown handler
  * @param {Server} server - HTTP server instance
+ * @param {Function} onShutdown - Optional callback to run before shutdown
  */
-function setupGracefulShutdown(server) {
-  function gracefulShutdown() {
+function setupGracefulShutdown(server, onShutdown = null) {
+  async function gracefulShutdown() {
     logger.info('Shutting down gracefully...');
+    
+    // Run shutdown callback if provided
+    if (onShutdown && typeof onShutdown === 'function') {
+      try {
+        await onShutdown();
+      } catch (error) {
+        logger.error('Error in shutdown callback:', error);
+      }
+    }
+    
     server.close(() => {
       logger.info('Server closed');
       process.exit(0);

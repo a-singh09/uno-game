@@ -1,31 +1,74 @@
 const logger = require('./logger');
+const redisStorage = require('./services/redisStorage');
+const { isRedisEnabled } = require('./config/redis');
+
+// In-memory user storage (fallback when Redis is disabled)
 const users = []
 
-const addUser = ({id, name, room}) => {
-   const numberOfUsersInRoom = users.filter(user => user.room === room && user.connected !== false).length
+const addUser = async ({id, name, room}) => {
+   const usersInRoom = isRedisEnabled() 
+      ? await redisStorage.getUsersInRoom(room)
+      : users.filter(user => user.room === room && user.connected !== false);
+   
+   const numberOfUsersInRoom = usersInRoom.length;
+   
    if(numberOfUsersInRoom === 6) {
       logger.info(`Room ${room} is full, user ${id} rejected`);
       return { error: 'Room full' };
    }
 
    // Check if user is reconnecting (same name in same room)
-   const existingUser = users.find(u => u.name === name && u.room === room && u.connected === false);
-   if (existingUser) {
+   const existingUser = isRedisEnabled()
+      ? await redisStorage.findUserByNameAndRoom(name, room)
+      : users.find(u => u.name === name && u.room === room && u.connected === false);
+   
+   if (existingUser && existingUser.connected === false) {
       // User is reconnecting, update their socket ID
-      existingUser.id = id;
-      existingUser.connected = true;
-      existingUser.disconnectedAt = null;
+      const updatedUser = {
+         ...existingUser,
+         id: id,
+         connected: true,
+         disconnectedAt: null
+      };
+      
+      if (isRedisEnabled()) {
+         await redisStorage.removeUser(existingUser.id);
+         await redisStorage.saveUser(updatedUser);
+      } else {
+         const idx = users.findIndex(u => u.id === existingUser.id);
+         if (idx !== -1) {
+            users[idx] = updatedUser;
+         }
+      }
+      
       logger.info(`User ${name} reconnected to room ${room} with new socket ${id}`);
-      return { newUser: existingUser, reconnected: true };
+      return { newUser: updatedUser, reconnected: true };
    }
 
    const newUser = { id, name, room, connected: true, disconnectedAt: null };
-   users.push(newUser);
+   
+   if (isRedisEnabled()) {
+      await redisStorage.saveUser(newUser);
+   } else {
+      users.push(newUser);
+   }
+   
    logger.info(`User ${id} added to room ${room} as ${name}`);
    return { newUser };
 }
 
-const removeUser = id => {
+const removeUser = async (id) => {
+   if (isRedisEnabled()) {
+      const removedUser = await redisStorage.removeUser(id);
+      if (removedUser) {
+         logger.info(`User ${id} removed from room ${removedUser.room}`);
+      } else {
+         logger.debug(`Attempted to remove non-existent user ${id}`);
+      }
+      return removedUser;
+   }
+
+   // Fallback to in-memory storage
    const removeIndex = users.findIndex(user => user.id === id);
 
    if(removeIndex!==-1) {
@@ -38,7 +81,19 @@ const removeUser = id => {
 }
 
 // Mark user as disconnected instead of removing immediately
-const markUserDisconnected = id => {
+const markUserDisconnected = async (id) => {
+   if (isRedisEnabled()) {
+      const updatedUser = await redisStorage.updateUser(id, {
+         connected: false,
+         disconnectedAt: Date.now()
+      });
+      if (updatedUser) {
+         logger.info(`User ${id} marked as disconnected in room ${updatedUser.room}`);
+      }
+      return updatedUser;
+   }
+
+   // Fallback to in-memory storage
    const user = users.find(user => user.id === id);
    if (user) {
       user.connected = false;
@@ -50,7 +105,13 @@ const markUserDisconnected = id => {
 }
 
 // Clean up users who have been disconnected for too long
-const cleanupDisconnectedUsers = (maxDisconnectTime = 60000) => {
+const cleanupDisconnectedUsers = async (maxDisconnectTime = 60000) => {
+   if (isRedisEnabled()) {
+      const removed = await redisStorage.cleanupDisconnectedUsers(maxDisconnectTime);
+      return removed;
+   }
+
+   // Fallback to in-memory storage
    const now = Date.now();
    const toRemove = users.filter(user => 
       user.connected === false && 
@@ -70,15 +131,24 @@ const cleanupDisconnectedUsers = (maxDisconnectTime = 60000) => {
 }
 
 // Find user by name and room (for reconnection)
-const findUserByNameAndRoom = (name, room) => {
+const findUserByNameAndRoom = async (name, room) => {
+   if (isRedisEnabled()) {
+      return redisStorage.findUserByNameAndRoom(name, room);
+   }
    return users.find(user => user.name === name && user.room === room);
 }
 
-const getUser = id => {
+const getUser = async (id) => {
+   if (isRedisEnabled()) {
+      return redisStorage.getUser(id);
+   }
    return users.find(user => user.id === id)
 }
 
-const getUsersInRoom = room => {
+const getUsersInRoom = async (room) => {
+   if (isRedisEnabled()) {
+      return redisStorage.getUsersInRoom(room);
+   }
    return users.filter(user => user.room === room)
 }
 

@@ -12,13 +12,14 @@ function registerReconnectionHandlers(socket, io) {
    * Room Rejoin Handler
    * Handles when a user attempts to rejoin a room after disconnection
    */
-  socket.on('rejoinRoom', ({ room, gameId }, callback) => {
+  socket.on('rejoinRoom', async ({ room, gameId }, callback) => {
     try {
       logger.info(`User ${socket.id} attempting to rejoin room ${room}`);
       
       // Check if room has active users
-      const roomUsers = getUsersInRoom(room);
-      const roomExists = roomUsers.length > 0 || gameStateManager.hasGameState(`game-${gameId}`);
+      const roomUsers = await getUsersInRoom(room);
+      const hasGameState = await gameStateManager.hasGameState(`game-${gameId}`);
+      const roomExists = roomUsers.length > 0 || hasGameState;
       
       if (roomExists) {
         // Add socket back to room
@@ -43,7 +44,7 @@ function registerReconnectionHandlers(socket, io) {
         socket.emit('reconnected', { room, gameId });
         
         // Send updated room data to all users in the room (including the reconnected user)
-        const updatedRoomUsers = getUsersInRoom(room);
+        const updatedRoomUsers = await getUsersInRoom(room);
         io.to(room).emit('roomData', { room, users: updatedRoomUsers });
         logger.info(`Sent updated room data to room ${room} with ${updatedRoomUsers.length} users`);
       } else {
@@ -64,18 +65,18 @@ function registerReconnectionHandlers(socket, io) {
    * Game State Sync Handler
    * Handles requests to sync game state after reconnection or page refresh
    */
-  socket.on('requestGameStateSync', ({ roomId, gameId }) => {
+  socket.on('requestGameStateSync', async ({ roomId, gameId }) => {
     try {
       logger.info(`User ${socket.id} requesting game state sync for room ${roomId}, game ${gameId}`);
       
       // Try to fetch by roomId first
-      let gameState = gameStateManager.getGameState(roomId);
-      let cardHashMap = gameStateManager.getCardHashMap(roomId);
+      let gameState = await gameStateManager.getGameState(roomId);
+      let cardHashMap = await gameStateManager.getCardHashMap(roomId);
       
       // If not found by roomId, try by gameId
       if (!gameState && gameId) {
         logger.info(`Attempting to restore game state by game ID ${gameId}`);
-        const gameData = gameStateManager.getGameStateByGameId(gameId);
+        const gameData = await gameStateManager.getGameStateByGameId(gameId);
         if (gameData) {
           gameState = gameData.state;
           cardHashMap = gameData.cardHashMap;

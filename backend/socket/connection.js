@@ -18,12 +18,12 @@ function registerConnectionHandlers(socket, io, connectionTracker) {
   /**
    * Handle disconnection with grace period for reconnection
    */
-  socket.on('disconnect', (reason) => {
+  socket.on('disconnect', async (reason) => {
     connectionTracker.count--;
     logger.info(`User ${socket.id} disconnected: ${reason}. Active connections: ${connectionTracker.count}`);
     
     // Mark user as temporarily disconnected instead of removing immediately
-    const user = markUserDisconnected(socket.id);
+    const user = await markUserDisconnected(socket.id);
     
     if (user) {
       // Notify other players that user is temporarily disconnected
@@ -35,20 +35,21 @@ function registerConnectionHandlers(socket, io, connectionTracker) {
       });
       
       // Set timeout to remove user if they don't reconnect (60 second grace period)
-      setTimeout(() => {
-        const currentUser = getUser(socket.id);
+      setTimeout(async () => {
+        const currentUser = await getUser(socket.id);
         
         // Only remove if user is still disconnected
         if (currentUser && currentUser.connected === false) {
-          const removedUser = removeUser(socket.id);
+          const removedUser = await removeUser(socket.id);
           
           if (removedUser) {
             logger.info(`User ${socket.id} did not reconnect, removing from room ${removedUser.room}`);
             
             // Update room data
+            const roomUsers = await getUsersInRoom(removedUser.room);
             io.to(removedUser.room).emit('roomData', { 
               room: removedUser.room, 
-              users: getUsersInRoom(removedUser.room) 
+              users: roomUsers
             });
             
             // Notify that player permanently left

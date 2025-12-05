@@ -872,3 +872,10 @@
 {"level":"info","message":"User x7prBtzPS1UhEJmVAAAX connected. Active connections: 7","service":"gameofuno-backend","timestamp":"2025-11-29 14:03:13"}
 {"level":"info","message":"User UuQgkDjYE0UrG4vWAAAP removed from room 168","service":"gameofuno-backend","timestamp":"2025-11-29 14:03:16"}
 {"level":"info","message":"User F44C08zKWi9tkWjSAAAZ connected. Active connections: 8","service":"gameofuno-backend","timestamp":"2025-11-29 14:03:16"}
+{"level":"info","message":"Game state manager initialized with file-based storage and periodic cleanup","service":"gameofuno-backend","timestamp":"2025-12-05 22:19:18"}
+{"level":"info","message":"Redis is disabled, Socket.IO will use in-memory adapter","service":"gameofuno-backend","timestamp":"2025-12-05 22:19:18"}
+{"level":"info","message":"Graceful shutdown handlers registered","service":"gameofuno-backend","timestamp":"2025-12-05 22:19:18"}
+{"level":"info","message":"Global error handlers registered","service":"gameofuno-backend","timestamp":"2025-12-05 22:19:18"}
+{"level":"info","message":"Started periodic cleanup task (interval: 30000ms, max disconnect: 60000ms)","service":"gameofuno-backend","timestamp":"2025-12-05 22:19:18"}
+{"level":"info","message":"Server started on Port 4000 at 2025-12-05T22:19:18.747Z (Redis: disabled)","service":"gameofuno-backend","timestamp":"2025-12-05 22:19:18"}
+{"level":"info","message":"Saving game states before shutdown...","service":"gameofuno-backend","timestamp":"2025-12-05 22:19:28"}

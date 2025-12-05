@@ -11,13 +11,14 @@ function registerLobbyHandlers(socket, io) {
    * Join Lobby Handler
    * Handles when a user joins a game lobby/room
    */
-  socket.on('join', (payload, callback) => {
-    let numberOfUsersInRoom = getUsersInRoom(payload.room).length;
+  socket.on('join', async (payload, callback) => {
+    let usersInRoom = await getUsersInRoom(payload.room);
+    let numberOfUsersInRoom = usersInRoom.length;
 
     // Assign player name based on current number of users (Player 1-6)
     const playerName = `Player ${numberOfUsersInRoom + 1}`;
 
-    const { error, newUser } = addUser({
+    const { error, newUser } = await addUser({
       id: socket.id,
       name: playerName,
       room: payload.room,
@@ -27,7 +28,8 @@ function registerLobbyHandlers(socket, io) {
 
     socket.join(newUser.room);
 
-    io.to(newUser.room).emit('roomData', { room: newUser.room, users: getUsersInRoom(newUser.room) });
+    const updatedUsers = await getUsersInRoom(newUser.room);
+    io.to(newUser.room).emit('roomData', { room: newUser.room, users: updatedUsers });
     socket.emit('currentUserData', { name: newUser.name });
     logger.debug(newUser);
     callback();
@@ -37,10 +39,11 @@ function registerLobbyHandlers(socket, io) {
    * Quit Room Handler
    * Handles when a user quits a room
    */
-  socket.on('quitRoom', () => {
-    const user = removeUser(socket.id);
+  socket.on('quitRoom', async () => {
+    const user = await removeUser(socket.id);
     if (user) {
-      io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room) });
+      const usersInRoom = await getUsersInRoom(user.room);
+      io.to(user.room).emit('roomData', { room: user.room, users: usersInRoom });
     }
   });
 
@@ -48,8 +51,8 @@ function registerLobbyHandlers(socket, io) {
    * Send Message Handler
    * Handles chat messages in the lobby/room
    */
-  socket.on('sendMessage', (payload, callback) => {
-    const user = getUser(socket.id);
+  socket.on('sendMessage', async (payload, callback) => {
+    const user = await getUser(socket.id);
     if (user) {
       io.to(user.room).emit('message', { user: user.name, text: payload.message });
       callback();

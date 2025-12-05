@@ -1,13 +1,15 @@
 const logger = require('./logger');
 const fs = require('fs');
 const path = require('path');
+const redisStorage = require('./services/redisStorage');
+const { isRedisEnabled } = require('./config/redis');
 
-// In-memory storage for game states
-// In production, consider using Redis or a database
+// In-memory storage for game states (fallback when Redis is disabled)
+// This is now only used when Redis is not available
 const gameStates = new Map();
 const cardHashMaps = new Map();
 
-// Persistent storage configuration
+// Persistent storage configuration (file-based fallback)
 const STORAGE_FILE = path.join(__dirname, 'game-states.json');
 const MAX_STORED_GAMES = 10;
 
@@ -15,9 +17,15 @@ const MAX_STORED_GAMES = 10;
 const gameMetadata = new Map(); // gameId -> { players, startTime, lastActivity, roomId }
 
 /**
- * Load game states from JSON file on startup
+ * Load game states from JSON file on startup (fallback storage)
  */
 const loadGameStatesFromFile = () => {
+    // Skip file loading if Redis is enabled
+    if (isRedisEnabled()) {
+        logger.info('Redis is enabled, skipping file-based game state loading');
+        return;
+    }
+
     try {
         if (fs.existsSync(STORAGE_FILE)) {
             const data = fs.readFileSync(STORAGE_FILE, 'utf8');
@@ -49,9 +57,14 @@ const loadGameStatesFromFile = () => {
 };
 
 /**
- * Save game states to JSON file
+ * Save game states to JSON file (fallback storage)
  */
 const saveGameStatesToFile = () => {
+    // Skip file saving if Redis is enabled
+    if (isRedisEnabled()) {
+        return true;
+    }
+
     try {
         const games = [];
         
@@ -96,11 +109,22 @@ const saveGameStatesToFile = () => {
 
 /**
  * Save game state for a room
+ * Uses Redis if enabled, falls back to in-memory + file storage
  * @param {string} roomId - The room identifier
  * @param {object} gameState - The game state object
  * @param {object} cardHashMap - Optional card hash map
  */
 const saveGameState = (roomId, gameState, cardHashMap = null) => {
+    // Use Redis storage if enabled
+    if (isRedisEnabled()) {
+        // Fire and forget - don't await to maintain sync API
+        redisStorage.saveGameState(roomId, gameState, cardHashMap).catch(err => {
+            logger.error(`Error saving game state to Redis for room ${roomId}:`, err);
+        });
+        return true;
+    }
+
+    // Fallback to in-memory storage
     try {
         const now = Date.now();
         gameStates.set(roomId, {
@@ -139,10 +163,18 @@ const saveGameState = (roomId, gameState, cardHashMap = null) => {
 
 /**
  * Get game state for a room
+ * Uses Redis if enabled, falls back to in-memory storage
  * @param {string} roomId - The room identifier
  * @returns {object|null} The game state or null if not found
  */
 const getGameState = (roomId) => {
+    // Use Redis storage if enabled (async operation)
+    if (isRedisEnabled()) {
+        // Return a promise that callers may need to handle
+        return redisStorage.getGameState(roomId);
+    }
+
+    // Fallback to in-memory storage
     const stored = gameStates.get(roomId);
     if (stored) {
         logger.debug(`Game state retrieved for room ${roomId}`);
@@ -154,10 +186,17 @@ const getGameState = (roomId) => {
 
 /**
  * Get game state by game ID (searches across all rooms)
+ * Uses Redis if enabled, falls back to in-memory storage
  * @param {string} gameId - The game identifier
  * @returns {object|null} The game state or null if not found
  */
 const getGameStateByGameId = (gameId) => {
+    // Use Redis storage if enabled
+    if (isRedisEnabled()) {
+        return redisStorage.getGameStateByGameId(gameId);
+    }
+
+    // Fallback to in-memory storage
     for (const [roomId, data] of gameStates.entries()) {
         if (data.state?.id?.toString() === gameId.toString()) {
             logger.debug(`Game state retrieved for game ID ${gameId} in room ${roomId}`);
@@ -175,10 +214,17 @@ const getGameStateByGameId = (gameId) => {
 
 /**
  * Get card hash map for a room
+ * Uses Redis if enabled, falls back to in-memory storage
  * @param {string} roomId - The room identifier
  * @returns {object|null} The card hash map or null if not found
  */
 const getCardHashMap = (roomId) => {
+    // Use Redis storage if enabled
+    if (isRedisEnabled()) {
+        return redisStorage.getCardHashMap(roomId);
+    }
+
+    // Fallback to in-memory storage
     const cardHashMap = cardHashMaps.get(roomId);
     if (cardHashMap) {
         logger.debug(`Card hash map retrieved for room ${roomId}`);
@@ -189,9 +235,19 @@ const getCardHashMap = (roomId) => {
 
 /**
  * Delete game state for a room
+ * Uses Redis if enabled, falls back to in-memory storage
  * @param {string} roomId - The room identifier
  */
 const deleteGameState = (roomId) => {
+    // Use Redis storage if enabled
+    if (isRedisEnabled()) {
+        redisStorage.deleteGameState(roomId).catch(err => {
+            logger.error(`Error deleting game state from Redis for room ${roomId}:`, err);
+        });
+        return true;
+    }
+
+    // Fallback to in-memory storage
     const deleted = gameStates.delete(roomId);
     cardHashMaps.delete(roomId);
     
@@ -203,18 +259,32 @@ const deleteGameState = (roomId) => {
 
 /**
  * Check if a room has a game state
+ * Uses Redis if enabled, falls back to in-memory storage
  * @param {string} roomId - The room identifier
  * @returns {boolean}
  */
 const hasGameState = (roomId) => {
+    // Use Redis storage if enabled
+    if (isRedisEnabled()) {
+        return redisStorage.hasGameState(roomId);
+    }
+
+    // Fallback to in-memory storage
     return gameStates.has(roomId);
 };
 
 /**
  * Get all active room IDs
+ * Uses Redis if enabled, falls back to in-memory storage
  * @returns {string[]} Array of room IDs
  */
 const getActiveRooms = () => {
+    // Use Redis storage if enabled
+    if (isRedisEnabled()) {
+        return redisStorage.getActiveRooms();
+    }
+
+    // Fallback to in-memory storage
     return Array.from(gameStates.keys());
 };
 
@@ -223,6 +293,13 @@ const getActiveRooms = () => {
  * @param {number} maxAge - Maximum age in milliseconds (default: 1 hour)
  */
 const cleanupOldGameStates = (maxAge = 3600000) => {
+    // Redis handles TTL automatically, skip cleanup if Redis is enabled
+    if (isRedisEnabled()) {
+        logger.debug('Redis handles TTL automatically, skipping manual cleanup');
+        return 0;
+    }
+
+    // Fallback to in-memory cleanup
     const now = Date.now();
     let cleanedCount = 0;
     
@@ -244,14 +321,27 @@ const cleanupOldGameStates = (maxAge = 3600000) => {
 
 /**
  * Get statistics about stored game states
+ * Uses Redis if enabled, falls back to in-memory storage
  * @returns {object} Statistics object
  */
-const getStats = () => {
+const getStats = async () => {
+    // Use Redis storage if enabled
+    if (isRedisEnabled()) {
+        const stats = await redisStorage.getStats();
+        return {
+            ...stats,
+            memoryUsage: process.memoryUsage()
+        };
+    }
+
+    // Fallback to in-memory storage
     return {
         totalGames: gameStates.size,
-        activeRooms: getActiveRooms(),
+        activeRooms: Array.from(gameStates.keys()),
         persistedGames: gameMetadata.size,
         storageFile: STORAGE_FILE,
+        storageType: 'memory',
+        redisEnabled: false,
         memoryUsage: process.memoryUsage()
     };
 };
@@ -261,6 +351,8 @@ const getStats = () => {
  * @returns {Array} Array of recent game metadata
  */
 const getRecentGames = () => {
+    // Note: Redis doesn't store recent games list separately
+    // This function uses in-memory metadata
     const games = [];
     
     for (const [gameId, metadata] of gameMetadata.entries()) {
@@ -277,35 +369,40 @@ const getRecentGames = () => {
     return games.slice(0, MAX_STORED_GAMES);
 };
 
-// Load existing game states on startup
+// Load existing game states on startup (only if Redis is disabled)
 loadGameStatesFromFile();
 
-// Start periodic cleanup (every 5 minutes)
+// Start periodic cleanup (every 5 minutes) - only needed for in-memory storage
 const CLEANUP_INTERVAL = 300000; // 5 minutes
 setInterval(() => {
     cleanupOldGameStates();
 }, CLEANUP_INTERVAL);
 
-// Periodic save to file (every 30 seconds)
+// Periodic save to file (every 30 seconds) - only needed for in-memory storage
 const SAVE_INTERVAL = 30000; // 30 seconds
 setInterval(() => {
     saveGameStatesToFile();
 }, SAVE_INTERVAL);
 
-// Save on process exit
+// Save on process exit (only needed for in-memory storage)
 process.on('SIGINT', () => {
-    logger.info('Saving game states before shutdown...');
-    saveGameStatesToFile();
+    if (!isRedisEnabled()) {
+        logger.info('Saving game states before shutdown...');
+        saveGameStatesToFile();
+    }
     process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-    logger.info('Saving game states before shutdown...');
-    saveGameStatesToFile();
+    if (!isRedisEnabled()) {
+        logger.info('Saving game states before shutdown...');
+        saveGameStatesToFile();
+    }
     process.exit(0);
 });
 
-logger.info('Game state manager initialized with persistent storage and periodic cleanup');
+const storageMode = isRedisEnabled() ? 'Redis' : 'file-based';
+logger.info(`Game state manager initialized with ${storageMode} storage and periodic cleanup`);
 
 module.exports = {
     saveGameState,

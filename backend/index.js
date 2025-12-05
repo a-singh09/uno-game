@@ -12,6 +12,13 @@ const {
     setupGracefulShutdown, 
     setupGlobalErrorHandlers 
 } = require('./utils/cleanup');
+const { 
+    connectRedis, 
+    disconnectRedis, 
+    isRedisEnabled,
+    getPubClient,
+    getSubClient
+} = require('./config/redis');
 
 // Set server timeout to prevent hanging connections
 // Increased to 120 seconds to support long-lived WebSocket connections
@@ -39,15 +46,60 @@ if (process.env.NODE_ENV === "production") {
     });
 }
 
-// Setup utilities
-setupGracefulShutdown(server);
-setupGlobalErrorHandlers();
-startPeriodicCleanup(30000, 60000); // Cleanup every 30s, remove users disconnected > 60s
+/**
+ * Setup Redis adapter for Socket.IO (enables horizontal scaling)
+ */
+async function setupRedisAdapter() {
+    if (!isRedisEnabled()) {
+        logger.info('Redis is disabled, Socket.IO will use in-memory adapter');
+        return;
+    }
 
-// Initialize all socket event handlers
-initializeSocketHandlers(io, connectionTracker);
+    try {
+        // Connect Redis clients
+        await connectRedis();
+        
+        const pubClient = getPubClient();
+        const subClient = getSubClient();
+        
+        if (pubClient && subClient) {
+            const { createAdapter } = require('@socket.io/redis-adapter');
+            io.adapter(createAdapter(pubClient, subClient));
+            logger.info('Socket.IO Redis adapter configured for horizontal scaling');
+        }
+    } catch (error) {
+        logger.error('Failed to setup Redis adapter:', error.message);
+        logger.warn('Falling back to in-memory adapter');
+    }
+}
 
-// Start server
-server.listen(PORT, () => {
-    logger.info(`Server started on Port ${PORT} at ${new Date().toISOString()}`);
+/**
+ * Initialize the server
+ */
+async function initializeServer() {
+    // Setup Redis adapter if enabled
+    await setupRedisAdapter();
+
+    // Setup utilities
+    setupGracefulShutdown(server, async () => {
+        // Disconnect Redis on shutdown
+        await disconnectRedis();
+    });
+    setupGlobalErrorHandlers();
+    startPeriodicCleanup(30000, 60000); // Cleanup every 30s, remove users disconnected > 60s
+
+    // Initialize all socket event handlers
+    initializeSocketHandlers(io, connectionTracker);
+
+    // Start server
+    server.listen(PORT, () => {
+        const redisStatus = isRedisEnabled() ? 'enabled' : 'disabled';
+        logger.info(`Server started on Port ${PORT} at ${new Date().toISOString()} (Redis: ${redisStatus})`);
+    });
+}
+
+// Start the server
+initializeServer().catch(error => {
+    logger.error('Failed to initialize server:', error);
+    process.exit(1);
 });

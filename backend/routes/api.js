@@ -33,7 +33,7 @@ router.post('/create-claimable-balance', async (req, res) => {
 /**
  * API endpoint to get game state by game ID
  */
-router.get('/game-state/:gameId', (req, res) => {
+router.get('/game-state/:gameId', async (req, res) => {
   try {
     const { gameId } = req.params;
     
@@ -41,7 +41,7 @@ router.get('/game-state/:gameId', (req, res) => {
       return res.status(400).json({ error: 'Game ID is required' });
     }
     
-    const gameData = gameStateManager.getGameStateByGameId(gameId);
+    const gameData = await gameStateManager.getGameStateByGameId(gameId);
     
     if (gameData) {
       logger.info(`Game state retrieved for game ID ${gameId}`);
@@ -92,13 +92,15 @@ router.get('/recent-games', (req, res) => {
  * Health check endpoint for Cloud Run
  * Note: Connection count is tracked in the main index.js
  */
-router.get('/health', (req, res) => {
-  const gameStats = gameStateManager.getStats();
+router.get('/health', async (req, res) => {
+  const gameStats = await gameStateManager.getStats();
   res.status(200).json({
     status: 'ok',
     uptime: process.uptime(),
     gameStates: gameStats.totalGames,
-    activeRooms: gameStats.activeRooms.length
+    activeRooms: gameStats.activeRooms.length,
+    redisEnabled: gameStats.redisEnabled || false,
+    storageType: gameStats.storageType || 'memory'
   });
 });
 
