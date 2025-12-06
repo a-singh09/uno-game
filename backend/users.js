@@ -5,7 +5,7 @@ const { isRedisEnabled } = require('./config/redis');
 // In-memory user storage (fallback when Redis is disabled)
 const users = []
 
-const addUser = async ({id, name, room}) => {
+const addUser = async ({id, name, room, walletAddress = null}) => {
    const usersInRoom = isRedisEnabled() 
       ? await redisStorage.getUsersInRoom(room)
       : users.filter(user => user.room === room && user.connected !== false);
@@ -17,35 +17,85 @@ const addUser = async ({id, name, room}) => {
       return { error: 'Room full' };
    }
 
-   // Check if user is reconnecting (same name in same room)
-   const existingUser = isRedisEnabled()
-      ? await redisStorage.findUserByNameAndRoom(name, room)
-      : users.find(u => u.name === name && u.room === room && u.connected === false);
+   // Check if user is reconnecting based on wallet address (preferred) or name
+   let existingUser = null;
    
-   if (existingUser && existingUser.connected === false) {
-      // User is reconnecting, update their socket ID
-      const updatedUser = {
-         ...existingUser,
-         id: id,
-         connected: true,
-         disconnectedAt: null
-      };
+   if (walletAddress) {
+      // First, try to find by wallet address in the same room
+      existingUser = isRedisEnabled()
+         ? await redisStorage.findUserByWalletAndRoom(walletAddress, room)
+         : users.find(u => u.walletAddress === walletAddress && u.room === room);
       
-      if (isRedisEnabled()) {
-         await redisStorage.removeUser(existingUser.id);
-         await redisStorage.saveUser(updatedUser);
-      } else {
-         const idx = users.findIndex(u => u.id === existingUser.id);
-         if (idx !== -1) {
-            users[idx] = updatedUser;
+      // If found and disconnected, remove the old instance
+      if (existingUser && existingUser.connected === false) {
+         logger.info(`Found disconnected user with wallet ${walletAddress}, removing old instance`);
+         if (isRedisEnabled()) {
+            await redisStorage.removeUser(existingUser.id);
+         } else {
+            const idx = users.findIndex(u => u.id === existingUser.id);
+            if (idx !== -1) {
+               users.splice(idx, 1);
+            }
          }
       }
+      // If found and still connected, it might be a duplicate connection
+      else if (existingUser && existingUser.connected === true) {
+         logger.info(`Found connected user with wallet ${walletAddress}, updating socket ID`);
+         // Update the socket ID for the existing user
+         const updatedUser = {
+            ...existingUser,
+            id: id,
+            connected: true,
+            disconnectedAt: null
+         };
+         
+         if (isRedisEnabled()) {
+            await redisStorage.removeUser(existingUser.id);
+            await redisStorage.saveUser(updatedUser);
+         } else {
+            const idx = users.findIndex(u => u.id === existingUser.id);
+            if (idx !== -1) {
+               users[idx] = updatedUser;
+            }
+         }
+         
+         logger.info(`User with wallet ${walletAddress} reconnected to room ${room} with new socket ${id}`);
+         return { newUser: updatedUser, reconnected: true };
+      }
+   }
+   
+   // Fallback: Check if user is reconnecting by name (for backward compatibility)
+   if (!existingUser) {
+      existingUser = isRedisEnabled()
+         ? await redisStorage.findUserByNameAndRoom(name, room)
+         : users.find(u => u.name === name && u.room === room && u.connected === false);
       
-      logger.info(`User ${name} reconnected to room ${room} with new socket ${id}`);
-      return { newUser: updatedUser, reconnected: true };
+      if (existingUser && existingUser.connected === false) {
+         // User is reconnecting, update their socket ID and wallet address
+         const updatedUser = {
+            ...existingUser,
+            id: id,
+            walletAddress: walletAddress || existingUser.walletAddress,
+            connected: true,
+            disconnectedAt: null
+         };
+         
+         if (isRedisEnabled()) {
+            await redisStorage.removeUser(existingUser.id);
+            await redisStorage.saveUser(updatedUser);
+         } else {
+            const idx = users.findIndex(u => u.id === existingUser.id);
+            if (idx !== -1) {
+               users[idx] = updatedUser;
+            }
+         }
+         
+         logger.info(`User ${name} reconnected to room ${room} with new socket ${id}`);
+         return { newUser: updatedUser, reconnected: true };
+      }
    }
 
-   const newUser = { id, name, room, connected: true, disconnectedAt: null };
+   const newUser = { id, name, room, walletAddress, connected: true, disconnectedAt: null };
    
    if (isRedisEnabled()) {
       await redisStorage.saveUser(newUser);
@@ -53,7 +103,7 @@ const addUser = async ({id, name, room}) => {
       users.push(newUser);
    }
    
-   logger.info(`User ${id} added to room ${room} as ${name}`);
+   logger.info(`User ${id} added to room ${room} as ${name} with wallet ${walletAddress || 'none'}`);
    return { newUser };
 }
 
@@ -138,6 +188,14 @@ const findUserByNameAndRoom = async (name, room) => {
    return users.find(user => user.name === name && user.room === room);
 }
 
+// Find user by wallet address and room (for reconnection)
+const findUserByWalletAndRoom = async (walletAddress, room) => {
+   if (isRedisEnabled()) {
+      return redisStorage.findUserByWalletAndRoom(walletAddress, room);
+   }
+   return users.find(user => user.walletAddress === walletAddress && user.room === room);
+}
+
 const getUser = async (id) => {
    if (isRedisEnabled()) {
       return redisStorage.getUser(id);
@@ -159,5 +217,6 @@ module.exports = {
    getUsersInRoom, 
    markUserDisconnected, 
    cleanupDisconnectedUsers,
-   findUserByNameAndRoom 
+   findUserByNameAndRoom,
+   findUserByWalletAndRoom 
 }

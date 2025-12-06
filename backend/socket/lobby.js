@@ -12,16 +12,31 @@ function registerLobbyHandlers(socket, io) {
    * Handles when a user joins a game lobby/room
    */
   socket.on('join', async (payload, callback) => {
-    let usersInRoom = await getUsersInRoom(payload.room);
-    let numberOfUsersInRoom = usersInRoom.length;
+    const { room, walletAddress } = payload;
+    
+    let usersInRoom = await getUsersInRoom(room);
 
-    // Assign player name based on current number of users (Player 1-6)
-    const playerName = `Player ${numberOfUsersInRoom + 1}`;
+    // Find the highest player number ever assigned in this room
+    // This ensures new players always get a unique number even if previous players left
+    let highestPlayerNumber = 0;
+    usersInRoom.forEach(user => {
+      const match = user.name.match(/Player (\d+)/);
+      if (match) {
+        const playerNum = parseInt(match[1]);
+        if (playerNum > highestPlayerNumber) {
+          highestPlayerNumber = playerNum;
+        }
+      }
+    });
 
-    const { error, newUser } = await addUser({
+    // Assign player name based on highest player number + 1
+    const playerName = `Player ${highestPlayerNumber + 1}`;
+
+    const { error, newUser, reconnected } = await addUser({
       id: socket.id,
       name: playerName,
-      room: payload.room,
+      room: room,
+      walletAddress: walletAddress || null,
     });
 
     if (error) return callback(error);
@@ -31,6 +46,13 @@ function registerLobbyHandlers(socket, io) {
     const updatedUsers = await getUsersInRoom(newUser.room);
     io.to(newUser.room).emit('roomData', { room: newUser.room, users: updatedUsers });
     socket.emit('currentUserData', { name: newUser.name });
+    
+    if (reconnected) {
+      logger.info(`User ${socket.id} reconnected to room ${room} as ${newUser.name} with wallet ${walletAddress || 'none'}`);
+    } else {
+      logger.info(`User ${socket.id} joined room ${room} as ${newUser.name} with wallet ${walletAddress || 'none'}`);
+    }
+    
     logger.debug(newUser);
     callback();
   });

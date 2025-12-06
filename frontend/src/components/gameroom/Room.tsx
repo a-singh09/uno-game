@@ -24,6 +24,7 @@ import { useWalletAddress } from "@/utils/onchainWalletUtils";
 import { useBalanceCheck } from "@/hooks/useBalanceCheck";
 import { LowBalanceDrawer } from "@/components/LowBalanceDrawer";
 import { MAX_PLAYERS } from "@/constants/gameConstants";
+import { useWalletStorage } from "@/hooks/useWalletStorage";
 
 type User = { 
   id: string;
@@ -46,7 +47,7 @@ const Room = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const hasJoinedRoom = useRef(false);
   const { account, bytesAddress } = useUserAccount();
-  const { address } = useWalletAddress();
+  const { address } = useWalletStorage(); // Use wallet storage hook for persistent address
   const [contract, setContract] = useState<UnoGameContract | null>(null)
   const [gameId, setGameId] = useState<bigint | null>(null)
   
@@ -154,7 +155,11 @@ const Room = () => {
       
       // Only join if we haven't already and socket is connected
       if (isConnected && !hasJoinedRoom.current) {
-        socket.emit("join", { room: room }, (error: any) => {
+        // Get wallet address from thirdweb hook or localStorage
+        const walletAddress = address || null;
+        console.log('Joining room with wallet address:', walletAddress);
+        
+        socket.emit("join", { room: room, walletAddress: walletAddress }, (error: any) => {
           if (error) {
             setRoomFull(true);
           } else {
@@ -172,7 +177,7 @@ const Room = () => {
         socket.off();
       }
     };
-  }, [room, isComputerMode, isConnected]);
+  }, [room, isComputerMode, isConnected, address]);
 
   useEffect(() => {
     const setup = async () => {
@@ -268,7 +273,9 @@ const Room = () => {
       // Re-join the lobby room to get player list (if game hasn't started)
       if (!gameStarted && !isComputerMode) {
         console.log('Re-joining lobby room:', room);
-        socket.emit("join", { room: room }, (error: any) => {
+        // Get wallet address for reconnection
+        const walletAddress = address || null;
+        socket.emit("join", { room: room, walletAddress: walletAddress }, (error: any) => {
           if (error) {
             console.error('Error rejoining lobby:', error);
           } else {

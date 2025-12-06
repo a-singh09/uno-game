@@ -475,6 +475,22 @@ class RedisStorageService {
   }
 
   /**
+   * Find user by wallet address and room
+   * @param {string} walletAddress - Wallet address
+   * @param {string} room - Room ID
+   * @returns {Promise<object|null>} User or null
+   */
+  async findUserByWalletAndRoom(walletAddress, room) {
+    try {
+      const users = await this.getUsersInRoom(room);
+      return users.find((u) => u.walletAddress === walletAddress) || null;
+    } catch (error) {
+      logger.error(`Error finding user by wallet ${walletAddress} in room ${room}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Get all users
    * @returns {Promise<object[]>} Array of all users
    */
