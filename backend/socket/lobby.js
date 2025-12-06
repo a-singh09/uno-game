@@ -16,21 +16,23 @@ function registerLobbyHandlers(socket, io) {
     
     let usersInRoom = await getUsersInRoom(room);
 
-    // Find the highest player number ever assigned in this room
-    // This ensures new players always get a unique number even if previous players left
-    let highestPlayerNumber = 0;
+    // Find the lowest available player number (1-6) to keep numbers consecutive
+    // This fills gaps when players leave
+    const existingPlayerNumbers = new Set();
     usersInRoom.forEach(user => {
       const match = user.name.match(/Player (\d+)/);
       if (match) {
-        const playerNum = parseInt(match[1]);
-        if (playerNum > highestPlayerNumber) {
-          highestPlayerNumber = playerNum;
-        }
+        existingPlayerNumbers.add(parseInt(match[1]));
       }
     });
 
-    // Assign player name based on highest player number + 1
-    const playerName = `Player ${highestPlayerNumber + 1}`;
+    // Find the first available number from 1 to 6
+    let playerNumber = 1;
+    while (existingPlayerNumbers.has(playerNumber) && playerNumber <= 6) {
+      playerNumber++;
+    }
+
+    const playerName = `Player ${playerNumber}`;
 
     const { error, newUser, reconnected } = await addUser({
       id: socket.id,

@@ -73,7 +73,6 @@ export default function PlayGame() {
   useEffect(() => {
     // Add listener for gameRoomCreated event
     const handleGameRoomCreated = () => {
-      console.log("Game room created event received");
       refetchGames();
     };
     
@@ -109,7 +108,6 @@ export default function PlayGame() {
 
     try {
       setCreateLoading(true);
-      console.log("Creating game...");
 
       const transaction = prepareContractCall({
         contract: {
@@ -124,7 +122,6 @@ export default function PlayGame() {
 
       sendTransaction(transaction, {
         onSuccess: async(result) => {
-          console.log("Transaction successful:", result);
           toast({
             title: "Game created successfully!",
             description: "Game created successfully!",
@@ -185,8 +182,6 @@ export default function PlayGame() {
       }
 
       try {
-        
-        console.log("Creating computer game...");
 
         const transaction = prepareContractCall({
           contract: {
@@ -201,7 +196,6 @@ export default function PlayGame() {
   
         sendTransaction(transaction, {
           onSuccess: async (result) => {
-            console.log("Transaction successful:", result);
             toast({
               title: "Game created successfully!",
               description: "Game created successfully!",
@@ -226,7 +220,6 @@ export default function PlayGame() {
                 gameId: gameId.toString(),
                 playerAddress: address
               });
-              console.log("Socket event emitted for computer game creation");
     
               // Navigate to game room with computer mode flag
               router.push(`/game/${gameId}?mode=computer`);
@@ -293,7 +286,6 @@ export default function PlayGame() {
 
     try {
       setJoiningGameId(gameId);
-      console.log(`Joining game ${gameId.toString()}...`);
 
       const transaction = prepareContractCall({
         contract: {
@@ -308,7 +300,6 @@ export default function PlayGame() {
 
       sendTransaction(transaction, {
         onSuccess: (result) => {
-          console.log("Transaction successful:", result);
           toast({
             title: "Game joined successfully!",
             description: "Game joined successfully!",
@@ -343,11 +334,11 @@ export default function PlayGame() {
   // Handle transaction confirmation
   // useEffect(() => {
   //   if (isConfirmed && hash) {
-  //     console.log("Transaction confirmed with hash:", hash);
+  //     // console.log("Transaction confirmed with hash:", hash);
       
   //     // Check if this was a create game transaction
   //     if (createLoading) {
-  //       console.log("Game created successfully");
+  //       // console.log("Game created successfully");
         
   //       if (socket && socket.current) {
   //         socket.current.emit("createGameRoom");
@@ -365,7 +356,7 @@ export default function PlayGame() {
       
   //     // Check if this was a join game transaction
   //     if (joiningGameId !== null) {
-  //       console.log(`Joined game ${joiningGameId.toString()} successfully`);
+  //       // console.log(`Joined game ${joiningGameId.toString()} successfully`);
         
   //       const gameIdToJoin = joiningGameId;
   //       setJoiningGameId(null);

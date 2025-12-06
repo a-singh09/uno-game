@@ -108,7 +108,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
     if (socketConnected) {
       socket.emit(eventName, data);
     } else {
-      console.log(`Socket disconnected, buffering event: ${eventName}`);
+      // console.log(`Socket disconnected, buffering event: ${eventName}`);
       pendingActionsRef.current.push({ eventName, data });
       
       toast({
@@ -123,7 +123,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
   // Process pending actions when reconnected
   useEffect(() => {
     if (socketConnected && pendingActionsRef.current.length > 0) {
-      console.log(`Processing ${pendingActionsRef.current.length} pending actions`);
+      // console.log(`Processing ${pendingActionsRef.current.length} pending actions`);
       
       pendingActionsRef.current.forEach(({ eventName, data }) => {
         socket.emit(eventName, data);
@@ -185,7 +185,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
       // Check if draw pile is empty and needs reshuffling
       if (drawCardPile.length === 0 && playedCardsPile.length > 1) {
         // Don't need to actually reshuffle here, as that will happen in onCardDrawnHandler
-        console.log('Computer notices draw pile is empty, will trigger reshuffle on draw');
+        // console.log('Computer notices draw pile is empty, will trigger reshuffle on draw');
       }
       
       // Draw a card if no valid moves
@@ -244,13 +244,13 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
 
   //runs once on component mount
   useEffect(() => {
-    console.log('Game component mounted, isComputerMode:', isComputerMode);
+    // console.log('Game component mounted, isComputerMode:', isComputerMode);
     
     if (isComputerMode) {
-      console.log('Initializing computer mode game...');
+      // console.log('Initializing computer mode game...');
       // For computer mode, initialize game state directly
       const shuffledCards = shuffleArray(PACK_OF_CARDS);
-      console.log('Shuffled cards:', shuffledCards.length);
+      // console.log('Shuffled cards:', shuffledCards.length);
 
       //extract first 7 elements to player1Deck (standard Uno starting hand)
       const player1Deck = shuffledCards.splice(0, 5);
@@ -271,12 +271,12 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
       //store all remaining cards into drawCardPile
       const drawCardPile = [...shuffledCards];
 
-      console.log('Computer mode game state initialized:', {
-        player1Deck: player1Deck.length,
-        player2Deck: player2Deck.length,
-        playedCard: playedCardsPile[0],
-        drawPile: drawCardPile.length
-      });
+      // console.log('Computer mode game state initialized:', {
+      //   player1Deck: player1Deck.length,
+      //   player2Deck: player2Deck.length,
+      //   playedCard: playedCardsPile[0],
+      //   drawPile: drawCardPile.length
+      // });
 
       // Initialize game state directly for computer mode
       dispatch({
@@ -294,7 +294,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
     } else {
       // For multiplayer mode, Player 1 initializes the game
       if (currentUser === "Player 1") {
-        console.log(`Player 1 initializing multiplayer game with ${playerCount} players...`);
+        // console.log(`Player 1 initializing multiplayer game with ${playerCount} players...`);
         //shuffle PACK_OF_CARDS array
         const shuffledCards = shuffleArray(PACK_OF_CARDS);
 
@@ -338,11 +338,18 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
         gameState.totalPlayers = playerCount; // Store the initial player count
         gameState.playDirection = 1; // Start with clockwise direction
 
-        console.log('Initialized game state:', {
-          playerCount,
-          totalPlayers: gameState.totalPlayers,
-          decks: Object.keys(gameState).filter(k => k.includes('Deck')).map(k => `${k}: ${gameState[k].length} cards`)
-        });
+        // console.log('Initialized game state:', {
+        //   playerCount,
+        //   totalPlayers: gameState.totalPlayers,
+        //   decks: Object.keys(gameState).filter(k => k.includes('Deck')).map(k => `${k}: ${gameState[k].length} cards`)
+        // });
+
+        // Log each player's cards for debugging
+        for (let i = 1; i <= playerCount; i++) {
+          // console.log(`Player ${i} cards:`, gameState[`player${i}Deck`]);
+        }
+        // console.log('Played card:', gameState.playedCardsPile[0]);
+        // console.log('Draw pile size:', gameState.drawCardPile.length);
 
         //send initial state to server
         emitSocketEvent("initGameState", gameState);
@@ -354,6 +361,17 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
     socket.on(
       "initGameState",
       (gameState) => {
+        // console.log('Received initGameState from server:', {
+        //   totalPlayers: gameState.totalPlayers,
+        //   currentUser,
+        //   decks: Object.keys(gameState).filter(k => k.includes('Deck')).map(k => `${k}: ${gameState[k]?.length || 0} cards`)
+        // });
+        
+        // Log the current player's deck
+        const playerNumber = currentUser.replace('Player ', '');
+        const myDeck = gameState[`player${playerNumber}Deck`];
+        // console.log(`My deck (${currentUser}):`, myDeck);
+        
         // Dispatch all game state properties dynamically
         dispatch(gameState);
         playShufflingSound();
@@ -431,14 +449,14 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
     const nextPlayerName = getNextPlayer(cardPlayedBy, activePlayers);
     const nextPlayerDeck = getPlayerDeck(nextPlayerName);
     
-    console.log('Turn rotation:', {
-      cardPlayedBy,
-      activePlayers,
-      nextPlayerName,
-      totalPlayers,
-      currentPlayerDeckSize: playerDeck.length,
-      nextPlayerDeckSize: nextPlayerDeck.length
-    });
+    // console.log('Turn rotation:', {
+    //   cardPlayedBy,
+    //   activePlayers,
+    //   nextPlayerName,
+    //   totalPlayers,
+    //   currentPlayerDeckSize: playerDeck.length,
+    //   nextPlayerDeckSize: nextPlayerDeck.length
+    // });
 
     //remove the played card from player's deck and add it to playedCardsPile and update their deck(immutably)
     const removeIndex = playerDeck.indexOf(played_card);
@@ -468,7 +486,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
           // Play shuffling sound
           playShufflingSound();
           
-          console.log('Reshuffled discard pile into draw pile during penalty. New draw pile size:', copiedDrawCardPileArray.length);
+          // console.log('Reshuffled discard pile into draw pile during penalty. New draw pile size:', copiedDrawCardPileArray.length);
         }
       }
       
@@ -553,13 +571,13 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
       }
     });
       
-    console.log('Deck changes:', {
-      cardPlayedBy,
-      nextPlayer: nextPlayerName,
-      activePlayers,
-      updatedPlayerDeckLength: updatedPlayerDeck.length,
-      nextPlayerDeckLength: nextPlayerDeckCopy.length
-    });
+    // console.log('Deck changes:', {
+    //   cardPlayedBy,
+    //   nextPlayer: nextPlayerName,
+    //   activePlayers,
+    //   updatedPlayerDeckLength: updatedPlayerDeck.length,
+    //   nextPlayerDeckLength: nextPlayerDeckCopy.length
+    // });
 
     if (isComputerMode) {
       // Handle locally for computer mode
@@ -612,7 +630,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
         const isNumberMatch = normalizedCurrentNumber === normalizedPlayedNumber;
         
         if (isColorMatch || isNumberMatch) {
-          console.log('Valid skip card move:', { isColorMatch, isNumberMatch });
+          // console.log('Valid skip card move:', { isColorMatch, isNumberMatch });
           
           // Skip card: skip the next player and move to the player after them
           // Direction does NOT change
@@ -620,12 +638,12 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
           const nextPlayer = getNextPlayer(cardPlayedBy, activePlayers, playDirection);
           const playerAfterSkipped = getNextPlayer(nextPlayer, activePlayers, playDirection);
           
-          console.log('Skip card played:', {
-            cardPlayedBy,
-            skippedPlayer: nextPlayer,
-            nextTurn: playerAfterSkipped,
-            direction: playDirection
-          });
+          // console.log('Skip card played:', {
+          //   cardPlayedBy,
+          //   skippedPlayer: nextPlayer,
+          //   nextTurn: playerAfterSkipped,
+          //   direction: playDirection
+          // });
           
           // Manually set the turn to skip a player
           cardPlayedByPlayer({
@@ -647,7 +665,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
         }
         //if no color or number match, invalid move - do not update state
         else {
-          console.log('Invalid skip card move:', { isColorMatch, isNumberMatch });
+          // console.log('Invalid skip card move:', { isColorMatch, isNumberMatch });
           alert("Invalid Move! Skip cards must match either the color or number of the current card.");
         }
         break;
@@ -668,14 +686,14 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
         const isNumberMatch = normalizedCurrentNumber === normalizedPlayedNumber;
         
         if (isColorMatch || isNumberMatch) {
-          console.log('Valid reverse card move:', { isColorMatch, isNumberMatch });
+          // console.log('Valid reverse card move:', { isColorMatch, isNumberMatch });
           
           const activePlayers = getActivePlayers();
           
           // In a 2-player game, Reverse acts exactly like Skip
           // because reversing direction brings the turn back to the same player
           if (activePlayers.length === 2) {
-            console.log('Reverse in 2-player game acts like Skip - turn stays with current player');
+            // console.log('Reverse in 2-player game acts like Skip - turn stays with current player');
             
             // Play the card but keep the turn with the current player
             cardPlayedByPlayer({
@@ -694,19 +712,19 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
             // In 3+ player games, Reverse flips the direction
             const newDirection = playDirection * -1; // Flip direction: 1 -> -1 or -1 -> 1
             
-            console.log('Reverse card flips direction:', {
-              oldDirection: playDirection === 1 ? 'clockwise' : 'counter-clockwise',
-              newDirection: newDirection === 1 ? 'clockwise' : 'counter-clockwise'
-            });
+            // console.log('Reverse card flips direction:', {
+            //   oldDirection: playDirection === 1 ? 'clockwise' : 'counter-clockwise',
+            //   newDirection: newDirection === 1 ? 'clockwise' : 'counter-clockwise'
+            // });
             
             // Get the next player in the NEW direction
             const nextPlayer = getNextPlayer(cardPlayedBy, activePlayers, newDirection);
             
-            console.log('Reverse card played:', {
-              cardPlayedBy,
-              newDirection: newDirection === 1 ? 'clockwise' : 'counter-clockwise',
-              nextTurn: nextPlayer
-            });
+            // console.log('Reverse card played:', {
+            //   cardPlayedBy,
+            //   newDirection: newDirection === 1 ? 'clockwise' : 'counter-clockwise',
+            //   nextTurn: nextPlayer
+            // });
             
             // Play the card and update direction
             cardPlayedByPlayer({
@@ -735,7 +753,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
         }
         //if no color or number match, invalid move - do not update state
         else {
-          console.log('Invalid reverse card move:', { isColorMatch, isNumberMatch });
+          // console.log('Invalid reverse card move:', { isColorMatch, isNumberMatch });
           alert("Invalid Move! Reverse cards must match either the color or number of the current card.");
         }
         break;
@@ -757,7 +775,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
         const isNumberMatch = normalizedCurrentNumber === normalizedPlayedNumber;
         
         if (isColorMatch || isNumberMatch) {
-          console.log('Valid draw 2 card move:', { isColorMatch, isNumberMatch });
+          // console.log('Valid draw 2 card move:', { isColorMatch, isNumberMatch });
           cardPlayedByPlayer({
             cardPlayedBy,
             played_card,
@@ -774,7 +792,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
         }
         //if no color or number match, invalid move - do not update state
         else {
-          console.log('Invalid draw 2 card move:', { isColorMatch, isNumberMatch });
+          // console.log('Invalid draw 2 card move:', { isColorMatch, isNumberMatch });
           alert("Invalid Move! Draw 2 cards must match either the color or number of the current card.");
         }
         break;
@@ -842,17 +860,17 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
         const colorOfPlayedCard = played_card.charAt(1);
 
         // Debug log to check the values being compared
-        console.log('Card matching debug:', {
-          played_card,
-          numberOfPlayedCard,
-          colorOfPlayedCard,
-          currentNumber,
-          currentColor,
-          numberMatch: currentNumber === numberOfPlayedCard,
-          colorMatch: currentColor === colorOfPlayedCard,
-          numberType: typeof numberOfPlayedCard,
-          currentNumberType: typeof currentNumber
-        });
+        // console.log('Card matching debug:', {
+        //   played_card,
+        //   numberOfPlayedCard,
+        //   colorOfPlayedCard,
+        //   currentNumber,
+        //   currentColor,
+        //   numberMatch: currentNumber === numberOfPlayedCard,
+        //   colorMatch: currentColor === colorOfPlayedCard,
+        //   numberType: typeof numberOfPlayedCard,
+        //   currentNumberType: typeof currentNumber
+        // });
 
         // Normalize the values for comparison (ensure they're both strings)
         const normalizedCurrentNumber = String(currentNumber);
@@ -865,12 +883,12 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
         const isNumberMatch = normalizedCurrentNumber === normalizedPlayedNumber;
         
         if (isColorMatch || isNumberMatch || isSameCard) {
-          console.log('Valid move:', { isColorMatch, isNumberMatch, isSameCard });
+          // console.log('Valid move:', { isColorMatch, isNumberMatch, isSameCard });
           cardPlayedByPlayer({ cardPlayedBy, played_card, colorOfPlayedCard, numberOfPlayedCard });
         }
         // If no color or number match, invalid move - do not update state
         else {
-          console.log('Invalid move:', { isColorMatch, isNumberMatch, isSameCard });
+          // console.log('Invalid move:', { isColorMatch, isNumberMatch, isSameCard });
           alert("Invalid Move! You must play a card that matches either the color or number of the current card.");
         }
         break;
@@ -936,7 +954,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
         copiedDrawCardPileArray = reshuffleResult.newDrawPile;
         updatedPlayedCardsPile = reshuffleResult.newPlayedCardsPile;
         
-        console.log('Reshuffled discard pile into draw pile. New draw pile size:', copiedDrawCardPileArray.length);
+        // console.log('Reshuffled discard pile into draw pile. New draw pile size:', copiedDrawCardPileArray.length);
       } else {
         // Handle case where there aren't enough cards to reshuffle
         console.warn('Draw card pile is empty and not enough cards to reshuffle!');
@@ -1005,7 +1023,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
     const isNumberMatch = normalizedCurrentNumber === normalizedDrawnNumber;
     const isPlayable = isWildCard || isColorMatch || isNumberMatch;
     
-    console.log('Card drawn:', drawCard, 'Playable:', isPlayable, { isWildCard, isColorMatch, isNumberMatch });
+    // console.log('Card drawn:', drawCard, 'Playable:', isPlayable, { isWildCard, isColorMatch, isNumberMatch });
     // Only change turn if the drawn card is NOT playable
     const activePlayers = getActivePlayers();
     const turnCopy = isPlayable ? turn : getNextPlayer(turn, activePlayers);
@@ -1041,7 +1059,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
       // For computer mode, if computer draws a playable card, trigger another move
       // Use computerMoveCounter to ensure fresh state instead of setTimeout with stale closure
       if (isPlayable && turn === "Player 2") {
-        console.log('Computer drew playable card:', drawCard, 'Will play on next turn cycle');
+        // console.log('Computer drew playable card:', drawCard, 'Will play on next turn cycle');
         setTimeout(() => {
           setComputerMoveCounter(prev => prev + 1);
         }, 1000);
@@ -1081,7 +1099,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
 
       // Get the winner's wallet address using Wagmi
       if (!address || !isConnected) {
-        console.log('Wallet not connected. Please connect your wallet.');
+        // console.log('Wallet not connected. Please connect your wallet.');
         
         toast({
           title: "Wallet Required",
@@ -1094,7 +1112,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
       }
       
       const currentUserAddress = address;
-      console.log('Connected wallet address:', currentUserAddress);
+      // console.log('Connected wallet address:', currentUserAddress);
 
 
       // Only create a claimable balance if the current user is the winner
@@ -1102,10 +1120,10 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
         (winnerPlayer === "Player 1" && currentUser === "Player 1") ||
         (winnerPlayer === "Player 2" && currentUser === "Player 2");
 
-      console.log(currentUser, winnerPlayer, isCurrentUserWinner)
+      // console.log(currentUser, winnerPlayer, isCurrentUserWinner)
 
       if (!isCurrentUserWinner) {
-        console.log('Current user is not the winner');
+        // console.log('Current user is not the winner');
         return;
       }
 
@@ -1121,7 +1139,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
       // });
 
       // const data = await response.json();
-      // console.log('API response:', data);
+      // // console.log('API response:', data);
 
       // Since we're not actually calling the API currently, just mark the reward as given
       if (true) {
@@ -1129,7 +1147,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
 
         // If we were calling the API, we would use the balanceId from the response
         // const supabaseResponse = await claimableBalancesApi.addClaimableBalance(currentUserAddress, 'dummy-balance-id');
-        // console.log('Supabase response:', supabaseResponse);
+        // // console.log('Supabase response:', supabaseResponse);
 
         try {
           // Check balance before proceeding with transaction
@@ -1151,7 +1169,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
           const gameResultString = JSON.stringify(gameResultData);
           const gameHash = ethers.keccak256(ethers.toUtf8Bytes(gameResultString));
           
-          console.log('Calling endGame with gameId:', room, 'and gameHash:', gameHash);
+          // console.log('Calling endGame with gameId:', room, 'and gameHash:', gameHash);
 
           const transaction = prepareContractCall({
             contract: {
@@ -1166,7 +1184,7 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
           
           sendTransaction(transaction, {
             onSuccess: (result) => {
-              console.log("Transaction successful:", result);
+              // console.log("Transaction successful:", result);
               toast({
                 title: "Game Ended on Blockchain",
                 description: "The game has been successfully recorded on the blockchain.",

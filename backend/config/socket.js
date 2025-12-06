@@ -14,7 +14,7 @@ const socketConfig = {
   },
   wsEngine: ws.Server,
   pingTimeout: 120000, // 120 seconds (2 min) before a client is considered disconnected
-  pingInterval: 25000, // Send ping every 25 seconds (more lenient than default)
+  pingInterval: 10000, // Send ping every 25 seconds (more lenient than default)
   connectTimeout: 30000, // Connection timeout: 30 seconds
   maxHttpBufferSize: 1e6, // 1MB max payload size
   transports: ['websocket', 'polling'], // Prefer WebSocket, fallback to polling

@@ -26,7 +26,7 @@ const addUser = async ({id, name, room, walletAddress = null}) => {
          ? await redisStorage.findUserByWalletAndRoom(walletAddress, room)
          : users.find(u => u.walletAddress === walletAddress && u.room === room);
       
-      // If found and disconnected, remove the old instance
+      // If found and disconnected, remove the old instance and create fresh user
       if (existingUser && existingUser.connected === false) {
          logger.info(`Found disconnected user with wallet ${walletAddress}, removing old instance`);
          if (isRedisEnabled()) {
@@ -37,11 +37,13 @@ const addUser = async ({id, name, room, walletAddress = null}) => {
                users.splice(idx, 1);
             }
          }
+         // Don't return here - let it create a new user with the new player number
+         existingUser = null;
       }
-      // If found and still connected, it might be a duplicate connection
+      // If found and still connected, it might be a duplicate connection (same wallet, different tab)
       else if (existingUser && existingUser.connected === true) {
          logger.info(`Found connected user with wallet ${walletAddress}, updating socket ID`);
-         // Update the socket ID for the existing user
+         // Update the socket ID for the existing user (keep same player name for active connections)
          const updatedUser = {
             ...existingUser,
             id: id,

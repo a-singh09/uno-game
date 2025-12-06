@@ -22,7 +22,7 @@ export function useWalletStorage() {
   // Update localStorage whenever wallet address changes
   useEffect(() => {
     if (connectedAddress) {
-      console.log('Wallet connected, storing address:', connectedAddress);
+      // console.log('Wallet connected, storing address:', connectedAddress);
       setStoredWalletAddress(connectedAddress);
     }
   }, [connectedAddress]);
