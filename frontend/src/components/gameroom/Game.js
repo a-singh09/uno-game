@@ -17,6 +17,7 @@ import { useSendTransaction } from "thirdweb/react";
 import { prepareContractCall } from "thirdweb";
 import { useSocketConnection } from "@/context/SocketConnectionContext";
 import { MAX_PLAYERS } from "@/constants/gameConstants";
+import { unoGameABI } from "@/constants/unogameabi";
 
 // Card codes: SKIP=100, DRAW2=200, DRAW4=400, WILD=500
 const checkGameOver = (deck) => deck.length === 1;
