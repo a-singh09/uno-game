@@ -67,6 +67,7 @@ class SocketManager {
   }
 
   private setupEventHandlers(): void {
+    console.log(this.socket)
     if (!this.socket) return;
 
     this.socket.on('connect', () => {
@@ -168,6 +169,7 @@ class SocketManager {
   */
 
   private attemptReconnect(): void {
+    console.log(this.socket)
     if (this.reconnectionInfo.isReconnecting || 
         this.reconnectionInfo.attempts >= this.config.reconnectAttempts!) {
       if (this.reconnectionInfo.attempts >= this.config.reconnectAttempts!) {

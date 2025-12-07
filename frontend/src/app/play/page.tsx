@@ -19,7 +19,6 @@ import ProfileDropdown from "@/components/profileDropdown"
 import { useBalanceCheck } from "@/hooks/useBalanceCheck";
 import { LowBalanceDrawer } from "@/components/LowBalanceDrawer";
 import socket, { socketManager } from "@/services/socket";
-import { useSocketConnection } from "@/context/SocketConnectionContext";
 
 // DIAM wallet integration removed
 
@@ -34,9 +33,6 @@ export default function PlayGame() {
   const router = useRouter();
   const chains = useChains();
   
-  // Use global socket connection status
-  const { isConnected: isSocketConnected, status: socketStatus } = useSocketConnection();
-
   // Use Wagmi hooks for wallet functionality
   const { address, isConnected } = useWalletAddress();
   const { data: walletClient } = useWalletClient();
