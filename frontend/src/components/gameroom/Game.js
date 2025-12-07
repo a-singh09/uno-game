@@ -247,7 +247,6 @@ const Game = ({ room, currentUser, isComputerMode = false, playerCount = 2 }) =>
     // console.log('Game component mounted, isComputerMode:', isComputerMode);
     
     if (isComputerMode) {
-      // console.log('Initializing computer mode game...');
       // For computer mode, initialize game state directly
       const shuffledCards = shuffleArray(PACK_OF_CARDS);
       // console.log('Shuffled cards:', shuffledCards.length);
