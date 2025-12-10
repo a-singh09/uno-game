@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PACK_OF_CARDS } from "@/utils/packOfCards";
+import { MAX_PLAYERS } from "@/constants/gameConstants";
 
 const PreviewGame = () => {
   const [playerCount, setPlayerCount] = useState(3);
@@ -61,12 +62,23 @@ const PreviewGame = () => {
   };
   const colorName = colorMap[currentColor] || 'blue';
   const turnType = currentTurn === "Player 1" ? "current" : "opponent";
+  
+  // Calculate player index: "current" if it's current user's turn, otherwise opponent index (0, 1, 2...)
+  let playerIndex: string | number = "current";
+  if (currentTurn !== "Player 1") {
+    const turnPlayerNum = parseInt(currentTurn.split(' ')[1]);
+    const currentPlayerNum = 1; // Player 1 is always the current user
+    // Calculate relative opponent index (starts from 0)
+    let relativeIndex = turnPlayerNum - currentPlayerNum;
+    if (relativeIndex < 0) relativeIndex += MAX_PLAYERS; // Wrap around for max players
+    playerIndex = relativeIndex - 1; // Adjust to start from 0
+  }
 
   return (
     <div
       className="game-container"
       style={{
-        minHeight: "100vh",
+        height: "100svh",
         display: "flex",
         flexDirection: "column",
         position: "relative",
@@ -78,7 +90,7 @@ const PreviewGame = () => {
         top: 0,
         left: 0,
         width: '100vw',
-        height: '100vh',
+        height: '100svh',
         overflow: 'hidden',
         zIndex: 0
       }}>
@@ -158,13 +170,22 @@ const PreviewGame = () => {
             left: 0,
             width: '100%',
             height: '100%',
-            backgroundImage: `url('/assets/play_bg/${turnType}.svg')`,
+            backgroundImage: playerIndex === "current" 
+              ? `url('/assets/play_bg/current.svg')` 
+              : `url('/assets/play_bg/opponent.svg')`,
             backgroundSize: '142%',
             backgroundRepeat: 'no-repeat',
             backgroundPosition: 'center',
             zIndex: 5,
-            transition: 'opacity 0.5s ease-in-out',
-            opacity: 0.9
+            transition: 'opacity 0.5s ease-in-out, transform 0.5s ease-in-out',
+            opacity: 0.9,
+            transform: playerIndex === "current" 
+              ? 'rotate(0deg)' 
+              : playerIndex === 0 
+                ? 'rotate(300deg)' 
+                : playerIndex === 1 
+                  ? 'rotate(60deg)' 
+                  : 'rotate(0deg)'
           }} 
         />
       </div>
@@ -201,7 +222,7 @@ const PreviewGame = () => {
         <label style={{ color: "white", fontWeight: "bold", fontSize: "0.875rem" }}>
           Players:
         </label>
-        {[2, 3, 4, 5, 6].map(count => (
+        {[2, 3, 4].map(count => (
           <button
             key={count}
             onClick={() => {
@@ -289,31 +310,42 @@ const PreviewGame = () => {
         style={{
           display: "flex",
           flexDirection: "row",
-          alignItems: "center",
+          alignItems: "end",
           justifyContent: "center",
           gap: "2rem",
           height: "auto",
-          paddingTop: "174px"
+          paddingTop: "180px"
         }}
       >
         {opponents.map((opponent, index) => {
           // Position opponents around the table based on index
           let positionStyle = {};
-          if (index === 0) {
-            // Left side, middle
-            positionStyle = { position: "absolute", top: "42%", left: "0%" };
-          } else if (index === 1) {
-            // Right side, middle
-            positionStyle = { position: "absolute", top: "42%", right: "0px" };
-          } else if (index === 2) {
-            // Top left
-            positionStyle = { position: "absolute", top: "20%", left: "0px" };
-          } else if (index === 3) {
-            // Top right
-            positionStyle = { position: "absolute", top: "20%", right: "0px" };
+          if (playerCount === 2) {
+            // In computer mode or 2-player game, use simple absolute positioning for all opponents
+            positionStyle = { position: "absolute", top: "1px" };
+          } else if (playerCount === 3) {
+            // In multiplayer mode with more than 2 players, position opponents around the table
+            if (index === 0) {
+              // Left side, middle
+              positionStyle = { position: "absolute", top: "26%", left: "5%" };
+            } else if (index === 1) {
+              // Right side, middle
+              positionStyle = { position: "absolute", top: "26%", right: "5%" };
+            } else {
+              // Additional players just use absolute positioning
+              positionStyle = { position: "absolute", top: "1px" };
+            }
           } else {
-            // Additional players just use absolute positioning
-            positionStyle = { position: "absolute" };
+            if (index === 0) {
+              // Left side, middle
+              positionStyle = { position: "absolute", top: "26%", left: "5%" };
+            } else if (index === 1) {
+              // Right side, middle
+              positionStyle = { position: "absolute", top: "1px" };
+            } else {
+              // Additional players just use absolute positioning
+              positionStyle = { position: "absolute", top: "26%", right: "5%" };
+            }
           }
 
           return (
@@ -400,7 +432,10 @@ const PreviewGame = () => {
               padding: "0.5rem",
               width: "100%",
               maxWidth: "400px",
-              flexDirection: index != 4 ? "column" : "row"
+              flexDirection:
+                playerCount === 4
+                  ? (index === 1 ? "row" : "column")
+                  : "column"
             }}>
               {opponent.deck.map((item, i) => (
                 <div 
@@ -408,7 +443,10 @@ const PreviewGame = () => {
                   style={{
                     position: "relative",
                     margin: "0 -10px",
-                    transform: index != 4 ? `rotate(${i % 2 === 0 ? '-2' : '2'}deg) translateY(${-54 * i}px)` : `rotate(${i % 2 === 0 ? '-5' : '5'}deg)`,
+                    transform:
+                      (playerCount === 4 && index === 1)
+                        ? `rotate(${i % 2 === 0 ? '-5' : '5'}deg)`
+                        : `rotate(${i % 2 === 0 ? '-2' : '2'}deg) translateY(${-54 * i}px)`,
                     zIndex: i
                   }}
                 >
@@ -442,6 +480,7 @@ const PreviewGame = () => {
           justifyContent: "center",
           position: "relative",
           width: "100%",
+          marginBottom: "70px"
         }}
       >
         <div
@@ -504,7 +543,7 @@ const PreviewGame = () => {
                     boxShadow: "0 0 15px rgba(14, 165, 233, 0.5)"
                   }}
                   alt={`cards-front ${playedCard}`}
-                  src={`../assets/cards-front/${playedCard}.webp`}
+                  src={`/assets/cards-front/${playedCard}.webp`}
                 />
               </div>
 
@@ -514,7 +553,7 @@ const PreviewGame = () => {
                   display: "flex",
                   justifyContent: "center",
                   position: "absolute",
-                  bottom: "-33px",
+                  bottom: "-56px",
                   left: "50%",
                   transform: "translateX(-50%)"
                 }}
@@ -635,7 +674,7 @@ const PreviewGame = () => {
                   }}
                   alt={`cards-front ${item}`}
                   className={currentTurn === "Player 1" ? "glow" : ""}
-                  src={`../assets/cards-front/${item}.webp`}
+                  src={`/assets/cards-front/${item}.webp`}
                 />
               </div>
             );

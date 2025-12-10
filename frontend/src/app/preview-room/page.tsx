@@ -28,7 +28,7 @@ const PreviewRoom = () => {
     <div
       className="Game"
       style={{
-        height: "100vh",
+        height: "100svh",
         width: "100vw",
         backgroundImage: "url('/bg_primary.webp')",
         backgroundSize: "cover",
@@ -70,7 +70,7 @@ const PreviewRoom = () => {
         <label style={{ color: "white", fontWeight: "bold" }}>
           Preview Players:
         </label>
-        {[2, 3, 4, 5, 6].map(count => (
+        {[2, 3, 4].map(count => (
           <button
             key={count}
             onClick={() => setPlayerCount(count)}
@@ -208,7 +208,7 @@ const PreviewRoom = () => {
               marginBottom: "2rem",
               fontStyle: "italic"
             }}>
-              waiting for other players to join ({users.length}/6)<br />minimum 2 players required to start
+              waiting for other players to join ({users.length}/4)<br />minimum 2 players required to start
             </div>
           </div>
 
