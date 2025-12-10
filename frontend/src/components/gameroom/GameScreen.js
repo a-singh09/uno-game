@@ -39,6 +39,8 @@ const GameScreen = ({
 
   // Get current player's deck
   const playerDeck = allPlayerDecks[currentUser] || [];
+
+  console.log(currentUser, "currentUser")
   
   // Get opponent decks (all other players with cards)
   const opponentDecks = [];
@@ -173,7 +175,7 @@ const GameScreen = ({
 
   return (
     <div className="game-container" style={{
-      minHeight: "100vh",
+      minHeight: "100svh",
       display: "flex",
       flexDirection: "column",
     }}>
@@ -242,11 +244,11 @@ const GameScreen = ({
         style={{
           display: "flex",
           flexDirection: "row",
-          alignItems: "center",
+          alignItems: "end",
           justifyContent: "center",
           gap: "2rem",
           height: "auto",
-          paddingTop: "174px"
+          paddingTop: "180px"
         }}
       >
         {opponentDecks.map((opponent, index) => {
@@ -256,24 +258,29 @@ const GameScreen = ({
           
           if (isComputerMode || totalPlayers === 2) {
             // In computer mode or 2-player game, use simple absolute positioning for all opponents
-            positionStyle = { position: "absolute" };
-          } else {
+            positionStyle = { position: "absolute", top: "1px" };
+          } else if (totalPlayers === 3) {
             // In multiplayer mode with more than 2 players, position opponents around the table
             if (index === 0) {
               // Left side, middle
-              positionStyle = { position: "absolute", top: "42%", left: "0%" };
+              positionStyle = { position: "absolute", top: "26%", left: "5%" };
             } else if (index === 1) {
               // Right side, middle
-              positionStyle = { position: "absolute", top: "42%", right: "0px" };
-            } else if (index === 2) {
-              // Top left
-              positionStyle = { position: "absolute", top: "20%", left: "0px" };
-            } else if (index === 3) {
-              // Top right
-              positionStyle = { position: "absolute", top: "20%", right: "0px" };
+              positionStyle = { position: "absolute", top: "26%", right: "5%" };
             } else {
               // Additional players just use absolute positioning
-              positionStyle = { position: "absolute" };
+              positionStyle = { position: "absolute", top: "1px" };
+            }
+          } else {
+            if (index === 0) {
+              // Left side, middle
+              positionStyle = { position: "absolute", top: "26%", left: "5%" };
+            } else if (index === 1) {
+              // Right side, middle
+              positionStyle = { position: "absolute", top: "1px" };
+            } else {
+              // Additional players just use absolute positioning
+              positionStyle = { position: "absolute", top: "26%", right: "5%" };
             }
           }
 
@@ -360,6 +367,7 @@ const GameScreen = ({
                 opponent={opponent.name}
                 opponentDeck={opponent.deck}
                 index={index}
+                playerCount={playerCount}
               />
             </div>
           );
@@ -377,6 +385,7 @@ const GameScreen = ({
             justifyContent: "center",
             position: "relative",
             width: "100%",
+            marginBottom: "70px"
           }}
         >
           <div

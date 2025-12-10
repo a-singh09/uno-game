@@ -73,7 +73,7 @@ const CommonView = ({
               boxShadow: "0 0 15px rgba(14, 165, 233, 0.5)"
             }}
             alt={`cards-front ${playedCardsPile[playedCardsPile.length - 1]}`}
-            src={`../assets/cards-front/${playedCardsPile[playedCardsPile.length - 1]}.webp`}
+            src={`/assets/cards-front/${playedCardsPile[playedCardsPile.length - 1]}.webp`}
           />
         </div>
       )}
@@ -84,7 +84,7 @@ const CommonView = ({
             display: "flex",
             justifyContent: "center",
             position: "absolute",
-            bottom: "-33px",
+            bottom: "-56px",
             left: "50%",
             transform: "translateX(-50%)"
           }}
