@@ -5,6 +5,6 @@ interface ReconnectionDependencies {
     userManager: UserManager;
     gameStateManager: GameStateManager;
 }
-export default function reconnectionHandler(io: Server, socket: Socket, { userManager, gameStateManager }: ReconnectionDependencies): void;
+export default function reconnectionHandler(io: Server, socket: Socket, { userManager }: ReconnectionDependencies): void;
 export {};
 //# sourceMappingURL=reconnection.d.ts.map

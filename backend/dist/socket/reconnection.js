@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = reconnectionHandler;
 const logger_1 = __importDefault(require("../logger"));
 const timers_1 = require("./timers");
-function reconnectionHandler(io, socket, { userManager, gameStateManager }) {
+function reconnectionHandler(io, socket, { userManager }) {
     socket.on('rejoinRoom', ({ room, gameId, walletAddress }, callback) => {
         const match = userManager.reconnectUser({
             room,
