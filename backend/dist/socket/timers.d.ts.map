@@ -1,1 +1,0 @@
-{"version":3,"file":"timers.d.ts","sourceRoot":"","sources":["../../socket/timers.ts"],"names":[],"mappings":"AAIA,iBAAS,eAAe,CAAC,MAAM,EAAE,MAAM,EAAE,EAAE,EAAE,MAAM,IAAI,GAAG,IAAI,CAO7D;AAED,iBAAS,YAAY,CAAC,MAAM,EAAE,MAAM,GAAG,IAAI,CAM1C;AAED,OAAO,EAAE,eAAe,EAAE,YAAY,EAAE,CAAC"}
