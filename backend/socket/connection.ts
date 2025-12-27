@@ -18,8 +18,14 @@ export default function connectionHandler(
   socket.emit("server_id", socket.id);
 
   socket.on("disconnect", async (reason: string) => {
-    const user = await userStorage.markDisconnected(socket.id);
+    const user = await userStorage.getUserBySocketId(socket.id);
     if (user && user.room) {
+      // Mark user as disconnected but keep their data
+      user.socketId = null;
+      user.status = "disconnected";
+      user.lastSeenAt = Date.now();
+      await userStorage.updateUser(user);
+      
       log.info(`User disconnected ${user.name} (${reason})`);
       // notify room
       io.to(user.room).emit("playerDisconnected", {

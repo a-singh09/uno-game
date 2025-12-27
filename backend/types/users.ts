@@ -1,10 +1,11 @@
 type UserStatus = "active" | "disconnected" | "kicked";
 
 interface User {
-  id: string;
+  id: string; // UUID - permanent user identifier
+  socketId: string | null; // Current socket connection ID
   walletAddress: string | null;
-  room?: string; // Optional - user may not be in a room yet
-  name?: string;
+  room: string | null; // Optional - user may not be in a room yet
+  name: string;
   status: UserStatus;
   lastSeenAt: number;
 }

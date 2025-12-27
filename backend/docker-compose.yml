@@ -14,11 +14,16 @@ services:
 
   redis:
     image: redis/redis-stack:latest
+    restart: unless-stopped
     ports:
       - "6379:6379"
       - "8001:8001"
     volumes:
-      - redis-data:/data
+      - redis-data:/redis-stack
+    environment:
+      - REDIS_ARGS=--save 60 1 --appendonly yes --dir /redis-stack --loglevel warning
+
 
 volumes:
   redis-data:
+    driver: local

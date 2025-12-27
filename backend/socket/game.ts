@@ -33,8 +33,14 @@ export default function gameHandler(
 ): void {
   // Join a specific game room (socket.io room)
   socket.on("joinRoom", async (roomId: string) => {
-    const user = await userStorage.getUser(socket.id);
-    if (user) clearRemoval(user.id);
+    const user = await userStorage.getUserBySocketId(socket.id);
+    if (user) {
+      clearRemoval(user.id);
+      // Update user's room field in database
+      user.room = roomId;
+      user.status = "active";
+      await userStorage.updateUser(user);
+    }
     socket.join(roomId);
     io.to(roomId).emit("userJoined", socket.id);
   });

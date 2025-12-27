@@ -50,14 +50,20 @@ export default function lobbyHandler(
         // Register or login user with UUID (creates new account or returns existing user)
         const user = await userStorage.registerOrLoginUser(walletAddress);
 
+        // Set the current socket connection
+        user.socketId = socket.id;
+        user.status = "active";
+        user.lastSeenAt = Date.now();
+
         // Update name if provided
         if (username) {
           user.name = username;
-          await userStorage.updateUser(user);
         }
 
+        await userStorage.updateUser(user);
+
         log.info(
-          `✓ User registered/logged in - userId: ${user.id}, wallet: ${user.walletAddress}, stored in Redis`
+          `✓ User registered/logged in - userId: ${user.id}, wallet: ${user.walletAddress}, socketId: ${socket.id}, stored in Redis`
         );
 
         callback?.(null, {
@@ -79,13 +85,21 @@ export default function lobbyHandler(
       callback?: (error: string | null, data?: any) => void
     ) => {
       try {
-        const result = await userStorage.addOrReuseUser({
-          id: socket.id,
+        log.info(
+          `Join room request - socketId: ${socket.id}, room: ${room}, wallet: ${
+            walletAddress || "none"
+          }`
+        );
+
+        // Use new method that updates existing user instead of creating new one
+        const result = await userStorage.joinRoomWithUser(
+          walletAddress || "",
           room,
-          walletAddress,
-        });
+          socket.id
+        );
 
         if (result.error) {
+          log.warn(`Join room failed - ${result.error}`);
           callback?.(result.error);
           return;
         }
@@ -95,7 +109,9 @@ export default function lobbyHandler(
 
         clearRemoval(user.id);
         socket.join(room);
-        log.info(`User ${user.name} joined room ${room}`);
+        log.info(
+          `✓ User ${user.name} (${user.id}) joined room ${room}, reused: ${reused}`
+        );
 
         socket.emit("currentUserData", { name: user.name });
 
@@ -111,8 +127,9 @@ export default function lobbyHandler(
   );
 
   socket.on("quitRoom", async () => {
-    const user = await userStorage.removeUser(socket.id);
+    const user = await userStorage.getUserBySocketId(socket.id);
     if (user && user.room) {
+      await userStorage.removeUser(user.id);
       socket.leave(user.room);
       const users = await userStorage.getUsersInRoom(user.room);
       io.to(user.room).emit("roomData", { room: user.room, users });
@@ -122,7 +139,7 @@ export default function lobbyHandler(
   socket.on(
     "sendMessage",
     async ({ message }: SendMessagePayload, callback?: () => void) => {
-      const user = await userStorage.getUser(socket.id);
+      const user = await userStorage.getUserBySocketId(socket.id);
       if (!user || !user.room) return;
       io.to(user.room).emit("message", { user: user.name, text: message });
       callback?.();

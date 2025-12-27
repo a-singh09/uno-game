@@ -10,7 +10,6 @@ import type {
   ReconnectParams,
 } from "../../types/users";
 
-const USER_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 const USERS_SET_KEY = "users:all";
 
 /**
@@ -65,6 +64,8 @@ class UserStorage extends BaseRedisStorage {
     const userId = uuidv4();
     const user: User = {
       id: userId,
+      socketId: null,
+      room: null,
       walletAddress: wallet,
       name: `User ${userId.substring(0, 8)}`,
       status: "active",
@@ -96,6 +97,83 @@ class UserStorage extends BaseRedisStorage {
     }
 
     return null;
+  }
+
+  /**
+   * Get user by socket ID
+   */
+  async getUserBySocketId(socketId: string): Promise<User | null> {
+    const allUserIds = await this.getAllUserIds();
+
+    for (const userId of allUserIds) {
+      const user = await this.getUser(userId);
+      if (user && user.socketId === socketId) {
+        return user;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Join a room with existing user account (identified by wallet)
+   * Updates the user's room and adds them to room slots
+   */
+  async joinRoomWithUser(
+    walletAddress: string,
+    room: string,
+    socketId: string
+  ): Promise<AddUserResult> {
+    const wallet = this.normalizeWallet(walletAddress);
+    if (!wallet) {
+      return { error: "Wallet address required" };
+    }
+
+    // Get the user by wallet (should exist from registration)
+    let user = await this.getUserByWallet(wallet);
+    if (!user) {
+      return { error: "User not registered. Please connect wallet first." };
+    }
+
+    // Check if user is already in this room
+    const usersInRoom = await this.getUsersInRoom(room);
+    const existingInRoom = usersInRoom.find((u) => u.id === user!.id);
+
+    if (existingInRoom) {
+      // User already in room, just update status and socketId
+      user.socketId = socketId;
+      user.status = "active";
+      user.lastSeenAt = Date.now();
+      await this.saveUser(user);
+
+      log.info(`User ${user.name} rejoined room ${room} (already in room)`);
+      return { user, reused: true };
+    }
+
+    // Add user to room
+    try {
+      const seatIndex = await this.addUserToRoom(room, user.id, MAX_PLAYERS);
+
+      // Update user with room info and socketId
+      user.socketId = socketId;
+      user.room = room;
+      user.status = "active";
+      user.lastSeenAt = Date.now();
+      user.name = user.name || `Player ${seatIndex + 1}`;
+      await this.saveUser(user);
+
+      log.info(
+        `User ${user.name} (${user.id}) joined room ${room} at seat ${seatIndex}`
+      );
+      return { user, reused: false };
+    } catch (err: unknown) {
+      const error = err as Error;
+      if (error.message === "Room full") {
+        log.warn(`joinRoomWithUser: room full - ${room}`);
+        return { error: "Room full" };
+      }
+      throw err;
+    }
   }
 
   async addOrReuseUser(params: AddUserParams): Promise<AddUserResult> {
@@ -143,6 +221,7 @@ class UserStorage extends BaseRedisStorage {
       );
       const user: User = {
         id: params.id,
+        socketId: params.id, // For legacy addOrReuseUser, socket.id is used as user.id
         room: params.room,
         walletAddress: wallet,
         name: `Player ${seatIndex + 1}`,
@@ -297,7 +376,7 @@ class UserStorage extends BaseRedisStorage {
 
   private async saveUser(user: User): Promise<void> {
     if (this.isEnabled()) {
-      await this.set(`user:${user.id}`, user, USER_TTL_MS);
+      await this.set(`user:${user.id}`, user);
       await this.sadd(USERS_SET_KEY, user.id);
       log.info(
         `✓ Redis: Saved user:${user.id} (wallet: ${
