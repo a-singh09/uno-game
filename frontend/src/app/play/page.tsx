@@ -13,6 +13,7 @@ import { useChains } from 'wagmi'
 import { client } from "@/utils/thirdWebClient";
 import { baseSepolia } from "@/lib/chains";
 import { unoGameABI } from "@/constants/unogameabi";
+import { getSelectedNetwork } from "@/utils/networkUtils";
 import { useReadContract, useSendTransaction } from "thirdweb/react";
 import { waitForReceipt, getContract, prepareContractCall } from "thirdweb";
 import ProfileDropdown from "@/components/profileDropdown"
@@ -20,6 +21,7 @@ import { useBalanceCheck } from "@/hooks/useBalanceCheck";
 import { LowBalanceDrawer } from "@/components/LowBalanceDrawer";
 import socket, { socketManager } from "@/services/socket";
 import { AddToFarcaster } from "@/components/AddToFarcaster";
+import NetworkDropdown from '@/components/NetworkDropdown';
 
 // DIAM wallet integration removed
 
@@ -47,7 +49,7 @@ export default function PlayGame() {
 
   const contract = getContract({
     client,
-    chain:  baseSepolia,
+    chain:  getSelectedNetwork(),
     address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
     abi: unoGameABI,
   });
@@ -110,7 +112,7 @@ export default function PlayGame() {
         contract: {
           address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
           abi: unoGameABI,
-          chain: baseSepolia,
+          chain: getSelectedNetwork(),
           client,
         },
         method: "createGame",
@@ -128,7 +130,7 @@ export default function PlayGame() {
 
           const receipt = await waitForReceipt({
               client,
-              chain: baseSepolia,
+              chain: getSelectedNetwork(),
               transactionHash: result.transactionHash,
             });
 
@@ -184,7 +186,7 @@ export default function PlayGame() {
           contract: {
             address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
             abi: unoGameABI,
-            chain: baseSepolia,
+            chain: getSelectedNetwork(),
             client,
           },
           method: "createGame",
@@ -202,7 +204,7 @@ export default function PlayGame() {
 
             const receipt = await waitForReceipt({
               client,
-              chain: baseSepolia,
+              chain: getSelectedNetwork(),
               transactionHash: result.transactionHash,
             });
 
@@ -288,7 +290,7 @@ export default function PlayGame() {
         contract: {
           address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
           abi: unoGameABI,
-          chain: baseSepolia,
+          chain: getSelectedNetwork(),
           client,
         },
         method: "joinGame",
@@ -414,6 +416,7 @@ export default function PlayGame() {
               </button>
             </Link>
           )}
+          <NetworkDropdown />
           {isConnected && address && (
             <ProfileDropdown address={address} />
           )}
