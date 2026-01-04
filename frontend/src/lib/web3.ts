@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { UnoGameContract } from "./types";
 import UNOContractJson from "../constants/UnoGame.json";
+import { getContractAddress } from "@/config/networks";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -19,10 +20,26 @@ async function verifyContract(provider: ethers.Provider, address: string) {
   // console.log('Contract verified at address:', address);
 }
 
-export async function getContractNew() {
+/**
+ * Get RPC URL for a specific chain
+ */
+function getRpcUrl(chainId: number): string {
+  const rpcUrls: Record<number, string> = {
+    11142220: "https://forno.celo-sepolia.celo-testnet.org", // Celo Sepolia
+    84532: "https://sepolia.base.org", // Base Sepolia
+  };
+
+  const rpcUrl = rpcUrls[chainId];
+  if (!rpcUrl) {
+    throw new Error(`No RPC URL configured for chain ID: ${chainId}`);
+  }
+
+  return rpcUrl;
+}
+
+export async function getContractNew(chainId: number) {
   try {
-    // Use Celo Sepolia for MiniPay compatibility (chain ID: 11142220)
-    const rpcUrl = "https://forno.celo-sepolia.celo-testnet.org";
+    const rpcUrl = getRpcUrl(chainId);
     const provider = new ethers.JsonRpcProvider(rpcUrl);
     const KEY = process.env.NEXT_PUBLIC_PRIVATE_KEY;
 
@@ -31,9 +48,9 @@ export async function getContractNew() {
     }
 
     const wallet = new ethers.Wallet(KEY, provider);
-    const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+    const contractAddress = getContractAddress(chainId);
     if (!contractAddress) {
-      throw new Error("Contract address is missing");
+      throw new Error(`Contract address not found for chain ID: ${chainId}`);
     }
     const contractABI = UNOContractJson.abi;
 

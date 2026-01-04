@@ -5,6 +5,7 @@ import { useAccount } from "wagmi";
 import { useActiveAccount } from "thirdweb/react";
 import { useEffect, useState } from "react";
 import { isMiniPay, getMiniPayAddress } from "./miniPayUtils";
+import { getContractAddress } from "@/config/networks";
 
 /**
  * Hook to get the connected wallet address
@@ -54,4 +55,13 @@ export function formatAddressForGame(
   address: string | undefined,
 ): string | null {
   return address || null;
+}
+
+/**
+ * Get the contract address for the current network
+ * @param chainId The chain ID of the network
+ * @returns The contract address for the network
+ */
+export function getNetworkContractAddress(chainId: number): string {
+  return getContractAddress(chainId);
 }

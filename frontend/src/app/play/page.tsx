@@ -30,6 +30,11 @@ import socket, { socketManager } from "@/services/socket";
 import { AddToFarcaster } from "@/components/AddToFarcaster";
 import NetworkDropdown from "@/components/NetworkDropdown";
 import {
+  getContractAddress,
+  isSupportedChain,
+  getSupportedChainIds,
+} from "@/config/networks";
+import {
   isMiniPay,
   supportsFeeAbstraction,
   getFeeCurrency,
@@ -39,6 +44,7 @@ import {
   getMiniPayAddress,
 } from "@/utils/miniPayUtils";
 import { encodeFunctionData } from "viem";
+import { useNetworkSelection } from "@/hooks/useNetworkSelection";
 
 // DIAM wallet integration removed
 
@@ -56,7 +62,10 @@ export default function PlayGame() {
   const { checkBalance } = useBalanceCheck();
   const router = useRouter();
   const chains = useChains();
-  const chainId = useChainId();
+
+  // Get the network selected from dropdown
+  const { selectedNetwork } = useNetworkSelection();
+  const chainId = selectedNetwork.id; // Use selected network's chain ID instead of wallet's current chain
 
   // Use wagmi's useAccount directly for MiniPay compatibility
   const { address: wagmiAddress, isConnected } = useAccount();
@@ -107,7 +116,7 @@ export default function PlayGame() {
   const contract = getContract({
     client,
     chain: getSelectedNetwork(),
-    address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
+    address: getContractAddress(chainId || 11142220) as `0x${string}`,
     abi: unoGameABI,
   });
 
@@ -174,15 +183,14 @@ export default function PlayGame() {
       if (isMiniPayWallet && address) {
         setTransactionStatus("✓ Preparing transaction...");
 
-        // Validate we're on Celo Sepolia
-        if (chainId !== 11142220) {
+        // Validate we're on a supported network
+        if (!isSupportedChain(chainId)) {
           throw new Error(
-            `Wrong network! Please switch to Celo Sepolia (chain ID: 11142220). Current chain: ${chainId}`,
+            `Unsupported network! Please switch to a supported network. Current chain: ${chainId}, Supported: ${getSupportedChainIds().join(", ")}`,
           );
         }
 
-        const contractAddress = process.env
-          .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
+        const contractAddress = getContractAddress(chainId) as `0x${string}`;
 
         if (!contractAddress) {
           throw new Error("Contract address not configured");
@@ -250,7 +258,7 @@ export default function PlayGame() {
         // Use ThirdWeb for browser/Farcaster
         const transaction = prepareContractCall({
           contract: {
-            address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
+            address: getContractAddress(chainId) as `0x${string}`,
             abi: unoGameABI,
             chain: getSelectedNetwork(),
             client,
@@ -329,8 +337,7 @@ export default function PlayGame() {
       try {
         // Use MiniPay native transaction method for fee abstraction
         if (isMiniPayWallet && address) {
-          const contractAddress = process.env
-            .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
+          const contractAddress = getContractAddress(chainId) as `0x${string}`;
           const data = encodeFunctionData({
             abi: unoGameABI,
             functionName: "createGame",
@@ -386,8 +393,7 @@ export default function PlayGame() {
           // Use ThirdWeb for browser/Farcaster
           const transaction = prepareContractCall({
             contract: {
-              address: process.env
-                .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
+              address: getContractAddress(chainId) as `0x${string}`,
               abi: unoGameABI,
               chain: getSelectedNetwork(),
               client,
@@ -459,7 +465,7 @@ export default function PlayGame() {
         const errorMessage =
           error?.message || error?.toString() || "Unknown error";
         const diagnostics = isMiniPayWallet
-          ? `\n\nDiagnostics:\nChain: ${chainId}\nFee Currency: ${getFeeCurrency(chainId)}\nContract: ${process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}\nWallet Client: ${walletClient ? "OK" : "Missing"}\nPublic Client: ${publicClient ? "OK" : "Missing"}\nError: ${errorMessage.substring(0, 150)}`
+          ? `\n\nDiagnostics:\nChain: ${chainId}\nFee Currency: ${getFeeCurrency(chainId)}\nContract: ${getContractAddress(chainId)}\nWallet Client: ${walletClient ? "OK" : "Missing"}\nPublic Client: ${publicClient ? "OK" : "Missing"}\nError: ${errorMessage.substring(0, 150)}`
           : "";
 
         toast({
@@ -508,8 +514,7 @@ export default function PlayGame() {
 
       // Use MiniPay native transaction method for fee abstraction
       if (isMiniPayWallet && address) {
-        const contractAddress = process.env
-          .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
+        const contractAddress = getContractAddress(chainId) as `0x${string}`;
         const data = encodeFunctionData({
           abi: unoGameABI,
           functionName: "joinGame",
@@ -548,7 +553,7 @@ export default function PlayGame() {
         // Use ThirdWeb for browser/Farcaster
         const transaction = prepareContractCall({
           contract: {
-            address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
+            address: getContractAddress(chainId) as `0x${string}`,
             abi: unoGameABI,
             chain: getSelectedNetwork(),
             client,
@@ -591,7 +596,7 @@ export default function PlayGame() {
       const errorMessage =
         error?.message || error?.toString() || "Unknown error";
       const diagnostics = isMiniPayWallet
-        ? `\n\nDiagnostics:\nChain: ${chainId}\nFee Currency: ${getFeeCurrency(chainId)}\nContract: ${process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}\nWallet Client: ${walletClient ? "OK" : "Missing"}\nPublic Client: ${publicClient ? "OK" : "Missing"}\nError: ${errorMessage.substring(0, 150)}`
+        ? `\n\nDiagnostics:\nChain: ${chainId}\nFee Currency: ${getFeeCurrency(chainId)}\nContract: ${getContractAddress(chainId)}\nWallet Client: ${walletClient ? "OK" : "Missing"}\nPublic Client: ${publicClient ? "OK" : "Missing"}\nError: ${errorMessage.substring(0, 150)}`
         : "";
 
       toast({

@@ -13,7 +13,6 @@ import { useWalletAddress } from "@/utils/onchainWalletUtils";
 import { useBalanceCheck } from "@/hooks/useBalanceCheck";
 import { LowBalanceDrawer } from "@/components/LowBalanceDrawer";
 import { ethers } from "ethers";
-import { useChainId } from "wagmi";
 import {
   isMiniPay,
   sendMiniPayTransaction,
@@ -23,6 +22,12 @@ import { encodeFunctionData } from "viem";
 import { useSocketConnection } from "@/context/SocketConnectionContext";
 import { MAX_PLAYERS } from "@/constants/gameConstants";
 import { unoGameABI } from "@/constants/unogameabi";
+import {
+  getContractAddress,
+  isSupportedChain,
+  getSupportedChainIds,
+} from "@/config/networks";
+import { useNetworkSelection } from "@/hooks/useNetworkSelection";
 
 // Card codes: SKIP=100, DRAW2=200, DRAW4=400, WILD=500
 const checkGameOver = (deck) => deck.length === 1;
@@ -87,8 +92,10 @@ const Game = ({
   const [showLowBalanceDrawer, setShowLowBalanceDrawer] = useState(false);
   const [isMiniPayWallet, setIsMiniPayWallet] = useState(false);
   const { checkBalance } = useBalanceCheck();
-  const chainId = useChainId();
 
+  // Get the network selected from dropdown
+  const { selectedNetwork } = useNetworkSelection();
+  const chainId = selectedNetwork.id;
   // Connection status tracking
   const { isConnected: socketConnected, isReconnecting } =
     useSocketConnection();
@@ -743,14 +750,14 @@ const Game = ({
 
       // Use MiniPay native transaction method for fee abstraction
       if (isMiniPayWallet && address) {
-        // Validate we're on Celo Sepolia
-        if (chainId !== 11142220) {
+        // Validate we're on a supported network
+        if (!isSupportedChain(chainId)) {
           throw new Error(
-            `Wrong network! Please switch to Celo Sepolia (chain ID: 11142220). Current chain: ${chainId}`,
+            `Unsupported network! Please switch to a supported network. Current chain: ${chainId}, Supported: ${getSupportedChainIds().join(", ")}`,
           );
         }
 
-        const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+        const contractAddress = getContractAddress(chainId);
 
         if (!contractAddress) {
           throw new Error("Contract address not configured");

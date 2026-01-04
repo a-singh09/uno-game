@@ -33,6 +33,12 @@ import { client } from "@/utils/thirdWebClient";
 import { getSelectedNetwork } from "@/utils/networkUtils";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+import {
+  getContractAddress,
+  isSupportedChain,
+  getSupportedChainIds,
+} from "@/config/networks";
+import { useNetworkSelection } from "@/hooks/useNetworkSelection";
 import { useBalanceCheck } from "@/hooks/useBalanceCheck";
 import { LowBalanceDrawer } from "@/components/LowBalanceDrawer";
 import { MAX_PLAYERS } from "@/constants/gameConstants";
@@ -82,7 +88,10 @@ const Room = () => {
   const [showLowBalanceDrawer, setShowLowBalanceDrawer] = useState(false);
   const [isMiniPayWallet, setIsMiniPayWallet] = useState(false);
   const { checkBalance } = useBalanceCheck();
-  const chainId = useChainId();
+
+  // Get the network selected from dropdown
+  const { selectedNetwork } = useNetworkSelection();
+  const chainId = selectedNetwork.id; // Use selected network's chain ID instead of wallet's current chain
 
   const { mutate: sendTransaction } = useSendTransaction();
 
@@ -161,7 +170,7 @@ const Room = () => {
       if (account) {
         try {
           // console.log('Setting up contract with account:', account);
-          const contractResult = await getContractNew();
+          const contractResult = await getContractNew(chainId);
           // console.log('Contract result:', contractResult);
 
           if (!contractResult.contract) {
@@ -560,15 +569,14 @@ const Room = () => {
 
       // Use MiniPay native transaction method for fee abstraction
       if (isMiniPayWallet && address) {
-        // Validate we're on Celo Sepolia
-        if (chainId !== 11142220) {
+        // Validate we're on a supported network
+        if (!isSupportedChain(chainId)) {
           throw new Error(
-            `Wrong network! Please switch to Celo Sepolia (chain ID: 11142220). Current chain: ${chainId}`,
+            `Unsupported network! Please switch to a supported network. Current chain: ${chainId}, Supported: ${getSupportedChainIds().join(", ")}`,
           );
         }
 
-        const contractAddress = process.env
-          .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
+        const contractAddress = getContractAddress(chainId) as `0x${string}`;
 
         if (!contractAddress) {
           throw new Error("Contract address not configured");
@@ -611,7 +619,7 @@ const Room = () => {
         // Non-MiniPay transaction (browser with MetaMask, etc.)
         const transaction = prepareContractCall({
           contract: {
-            address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`,
+            address: getContractAddress(chainId) as `0x${string}`,
             abi: unoGameABI,
             chain: getSelectedNetwork(),
             client,
