@@ -28,6 +28,7 @@ import {
   getSupportedChainIds,
 } from "@/config/networks";
 import { useNetworkSelection } from "@/hooks/useNetworkSelection";
+import { useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
 
 // Card codes: SKIP=100, DRAW2=200, DRAW4=400, WILD=500
 const checkGameOver = (deck) => deck.length === 1;
@@ -96,6 +97,18 @@ const Game = ({
   // Get the network selected from dropdown
   const { selectedNetwork } = useNetworkSelection();
   const chainId = selectedNetwork.id;
+
+  // Wagmi hooks for browser wallet transactions
+  const {
+    sendTransaction,
+    data: txHash,
+    isPending: isTxPending,
+  } = useSendTransaction();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash: txHash,
+    });
+
   // Connection status tracking
   const { isConnected: socketConnected, isReconnecting } =
     useSocketConnection();
@@ -779,32 +792,55 @@ const Game = ({
 
         toast({
           title: "Game Ended on Blockchain",
-          description: "Game recorded successfully on Celo Sepolia.",
+          description: `Game recorded successfully on ${selectedNetwork.displayName}.`,
           variant: "success",
           duration: 5000,
         });
       } else {
-        // Non-MiniPay: This section would need wagmi implementation
-        // For now, show an error since we're removing thirdweb dependency
+        // Browser wallet: Use wagmi transaction
+        if (!isSupportedChain(chainId)) {
+          throw new Error(
+            `Unsupported network! Please switch to a supported network. Current chain: ${chainId}, Supported: ${getSupportedChainIds().join(", ")}`,
+          );
+        }
+
+        const contractAddress = getContractAddress(chainId);
+
+        if (!contractAddress) {
+          throw new Error("Contract address not configured");
+        }
+
+        const data = encodeFunctionData({
+          abi: unoGameABI,
+          functionName: "endGame",
+          args: [BigInt(room), gameHash],
+        });
+
         toast({
-          title: "Error",
-          description:
-            "Please use MiniPay wallet on Celo Sepolia to end the game.",
-          variant: "destructive",
+          title: "Transaction Pending",
+          description: "Please confirm the transaction in your wallet...",
+          variant: "default",
           duration: 5000,
         });
-        console.error(
-          "Non-MiniPay wallets not yet supported for end game transaction",
-        );
-        return;
+
+        // Send transaction using wagmi
+        sendTransaction({
+          to: contractAddress,
+          data: data,
+        });
+
+        // Note: Transaction confirmation is handled by the useEffect below
       }
 
-      toast({
-        title: "Congratulations!",
-        description: "You've won the game!",
-        variant: "success",
-        duration: 5000,
-      });
+      // Show congratulations for MiniPay (instant), browser wallet waits for confirmation
+      if (isMiniPayWallet) {
+        toast({
+          title: "Congratulations!",
+          description: "You've won the game!",
+          variant: "success",
+          duration: 5000,
+        });
+      }
     } catch (error) {
       console.error("Failed to end game on blockchain:", error);
       const errorMessage =
@@ -817,6 +853,34 @@ const Game = ({
       });
     }
   };
+
+  // Handle browser wallet transaction confirmation
+  useEffect(() => {
+    if (isConfirming && !isMiniPayWallet) {
+      toast({
+        title: "Transaction Confirming",
+        description: "Waiting for blockchain confirmation...",
+        variant: "default",
+        duration: 5000,
+      });
+    }
+
+    if (isConfirmed && !isMiniPayWallet) {
+      toast({
+        title: "Game Ended on Blockchain",
+        description: `Game recorded successfully on ${selectedNetwork.displayName}.`,
+        variant: "success",
+        duration: 5000,
+      });
+
+      toast({
+        title: "Congratulations!",
+        description: "You've won the game!",
+        variant: "success",
+        duration: 5000,
+      });
+    }
+  }, [isConfirming, isConfirmed, isMiniPayWallet]);
 
   useEffect(() => {
     if (gameOver && winner && !rewardGiven) handleWinnerReward(winner);
